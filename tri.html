@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tri des participants – ScanProf</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fafafa;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .filters {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 30px 0;
+    }
+
+    .filters button {
+      padding: 10px 15px;
+      border: none;
+      background-color: #3498db;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .filters button:hover {
+      background-color: #2980b9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tri des participants – ScanProf</h1>
+
+  <div class="filters">
+    <button onclick="sortBy('nom')">Nom A-Z</button>
+    <button onclick="sortBy('vitesse')">Vitesse ↑</button>
+    <button onclick="sortBy('vitesse', true)">Vitesse ↓</button>
+    <button onclick="sortBy('vma')">VMA ↑</button>
+    <button onclick="sortBy('vma', true)">VMA ↓</button>
+    <button onclick="sortBy('distance')">Distance ↑</button>
+    <button onclick="sortBy('distance', true)">Distance ↓</button>
+  </div>
+
+  <table id="participantsTable">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Classe</th>
+        <th>Sexe</th>
+        <th>Distance</th>
+        <th>Vitesse</th>
+        <th>VMA</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+  </footer>
+
+  <script src="tri.js"></script>
+</body>
+</html>
