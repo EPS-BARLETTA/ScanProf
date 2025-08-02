@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanProf – Scanner QR</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      text-align: center;
+      padding: 20px;
+    }
+    #reader {
+      width: 300px;
+      margin: auto;
+      margin-top: 20px;
+    }
+    table {
+      margin: 30px auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 700px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+    #download {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #2ecc71;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>ScanProf – Lecture QR RunStats</h1>
+  <div id="reader"></div>
+  <table id="resultTable">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Classe</th>
+        <th>Sexe</th>
+        <th>Distance</th>
+        <th>Vitesse</th>
+        <th>VMA</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button id="download">Télécharger CSV</button>
+
+  <script src="scan.js"></script>
+</body>
+</html>
