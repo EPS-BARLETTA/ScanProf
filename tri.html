@@ -25,34 +25,17 @@
       margin: 30px 0;
     }
 
-    select, button {
+    .filters button {
       padding: 10px 15px;
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    select {
-      background-color: #ecf0f1;
-      color: #2c3e50;
-    }
-
-    button {
       background-color: #3498db;
       color: white;
+      border-radius: 5px;
+      cursor: pointer;
     }
 
-    button:hover {
+    .filters button:hover {
       background-color: #2980b9;
-    }
-
-    .danger {
-      background-color: #e74c3c;
-    }
-
-    .danger:hover {
-      background-color: #c0392b;
     }
 
     table {
@@ -72,15 +55,10 @@
       color: white;
     }
 
-    .actions {
-      text-align: center;
-      margin: 20px 0;
-    }
-
     footer {
       text-align: center;
       margin-top: 40px;
-      color: #999;
+      color: #666;
       font-size: 0.9rem;
     }
   </style>
@@ -89,29 +67,116 @@
   <h1>Tri des participants – ScanProf</h1>
 
   <div class="filters">
-    <select id="critere-select"></select>
-    <select id="sens-select">
-      <option value="desc">Décroissant</option>
-      <option value="asc">Croissant</option>
-    </select>
-    <button onclick="trierTableau()">Appliquer le tri</button>
+    <button onclick="sortBy('nom')">Nom A-Z</button>
+    <button onclick="sortBy('vitesse')">Vitesse ↑</button>
+    <button onclick="sortBy('vitesse', true)">Vitesse ↓</button>
+    <button onclick="sortBy('vma')">VMA ↑</button>
+    <button onclick="sortBy('vma', true)">VMA ↓</button>
+    <button onclick="sortBy('distance')">Distance ↑</button>
+    <button onclick="sortBy('distance', true)">Distance ↓</button>
   </div>
 
-  <div class="actions">
-    <a class="button" href="index.html">🏠 Accueil</a>
-    <button class="button" onclick="exporterCSV()">📥 Export CSV</button>
-    <button class="button danger" onclick="resetDonnees()">🗑 Réinitialiser</button>
-  </div>
+  <input type="file" id="importCsvInput" accept=".csv" style="margin: 20px auto; display: block;" />
 
-  <table>
-    <thead id="entete-tableau"></thead>
-    <tbody id="corps-tableau"></tbody>
+  <table id="participantsTable">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Classe</th>
+        <th>Sexe</th>
+        <th>Distance</th>
+        <th>Vitesse</th>
+        <th>VMA</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
 
   <footer>
-    ScanProf – Équipe EPS Lycée Vauban – LUXEMBOURG – JB
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
-  <script src="tri-dynamique.js"></script>
+  <script>
+    const tableBody = document.querySelector("#participantsTable tbody");
+    let participants = JSON.parse(localStorage.getItem("eleves") || "[]");
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      participants.forEach(eleve => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${eleve.nom}</td>
+          <td>${eleve.classe}</td>
+          <td>${eleve.sexe}</td>
+          <td>${eleve.distance}</td>
+          <td>${eleve.vitesse}</td>
+          <td>${eleve.vma}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function sortBy(key, desc = false) {
+      participants.sort((a, b) => {
+        const valA = typeof a[key] === "string" ? a[key].toLowerCase() : a[key];
+        const valB = typeof b[key] === "string" ? b[key].toLowerCase() : b[key];
+        return desc ? valB - valA : valA > valB ? 1 : valA < valB ? -1 : 0;
+      });
+      renderTable();
+    }
+
+    // 📤 Importer fichier CSV
+    document.getElementById("importCsvInput").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const text = e.target.result;
+        const lignes = text.trim().split("\n").slice(1); // on ignore l’en-tête
+        let ajoutCount = 0;
+
+        lignes.forEach(ligne => {
+          const [nom, prenom, classe, sexe, distance, vitesse, vma] = ligne.split(",");
+
+          const eleve = {
+            nom: nom.trim(),
+            prenom: prenom.trim(),
+            classe: classe.trim(),
+            sexe: sexe.trim(),
+            distance: parseFloat(distance),
+            vitesse: parseFloat(vitesse),
+            vma: parseFloat(vma)
+          };
+
+          if (!eleve.nom || !eleve.prenom || isNaN(eleve.vma)) return;
+
+          const existe = participants.some(e =>
+            e.nom === eleve.nom &&
+            e.prenom === eleve.prenom &&
+            e.classe === eleve.classe
+          );
+
+          if (!existe) {
+            participants.push(eleve);
+            ajoutCount++;
+          }
+        });
+
+        if (ajoutCount > 0) {
+          participants.sort((a, b) => a.nom.localeCompare(b.nom));
+          localStorage.setItem("eleves", JSON.stringify(participants));
+          alert(`✅ ${ajoutCount} élève(s) importé(s) avec succès.`);
+          renderTable();
+        } else {
+          alert("⚠️ Aucun élève nouveau trouvé ou fichier invalide.");
+        }
+      };
+
+      reader.readAsText(file);
+    });
+
+    renderTable();
+  </script>
 </body>
 </html>
