@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scan des QR Codes – ScanProf</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f7f7f7;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    #status {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #999;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Scanner un QR Code</h1>
+  <div id="reader"></div>
+  <div id="status"></div>
+
+  <footer>
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+  </footer>
+
+  <script src="scan.js"></script>
+</body>
+</html>
