@@ -54,6 +54,14 @@
       background-color: #2980b9;
     }
 
+    .danger {
+      background-color: #e74c3c;
+    }
+
+    .danger:hover {
+      background-color: #c0392b;
+    }
+
     footer {
       text-align: center;
       margin-top: 30px;
@@ -67,8 +75,10 @@
   <h1>Résumé des élèves scannés</h1>
 
   <div class="actions">
-    <a class="button" href="tri.html">🔍 Accéder au tri</a>
+    <a class="button" href="index.html">🏠 Accueil</a>
+    <a class="button" href="tri.html">📊 Accéder au tri</a>
     <button class="button" onclick="exporterCSV()">📥 Exporter en CSV</button>
+    <button class="button danger" onclick="resetDonnees()">🗑 Réinitialiser les données</button>
   </div>
 
   <table>
@@ -77,7 +87,7 @@
   </table>
 
   <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    ScanProf – Équipe EPS Lycée Vauban – LUXEMBOURG – JB
   </footer>
 
   <script>
@@ -96,7 +106,6 @@
       }
 
       const champs = Object.keys(tableauEleves[0]);
-
       const ligneEntete = document.createElement("tr");
       champs.forEach(champ => {
         const th = document.createElement("th");
@@ -137,6 +146,13 @@
       document.body.appendChild(lien);
       lien.click();
       document.body.removeChild(lien);
+    }
+
+    function resetDonnees() {
+      if (confirm("Voulez-vous vraiment supprimer tous les élèves scannés ?")) {
+        localStorage.removeItem("eleves");
+        location.reload();
+      }
     }
 
     afficherTableau();
