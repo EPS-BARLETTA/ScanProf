@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Création de groupes – ZENOS Tour</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Groupes ZENOS – ScanProf</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background-color: #ecf0f1;
+      background-color: #f7f7f7;
     }
 
     h1 {
@@ -17,66 +16,79 @@
       color: #2c3e50;
     }
 
-    #groupes {
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      margin: 10px;
+      font-size: 1rem;
+    }
+
+    .button:hover {
+      background-color: #2980b9;
+    }
+
+    .group-container {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
       gap: 20px;
+      justify-content: center;
       margin-top: 30px;
     }
 
-    .groupe {
-      background-color: #d6eaf8;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    .group {
+      border: 2px solid #3498db;
+      border-radius: 8px;
+      padding: 15px;
       width: 280px;
+      background-color: #ecf0f1;
     }
 
-    .groupe h3 {
+    .group h3 {
       margin-top: 0;
+      color: #2c3e50;
       text-align: center;
-      color: #2980b9;
     }
 
-    ul {
-      padding-left: 20px;
-      text-align: left;
+    .group ul {
+      list-style: none;
+      padding: 0;
     }
 
-    button {
-      display: block;
-      margin: 30px auto 0;
-      padding: 10px 20px;
-      font-size: 1rem;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #2980b9;
+    .group li {
+      padding: 5px 0;
+      border-bottom: 1px solid #ccc;
     }
 
     footer {
       text-align: center;
-      margin-top: 50px;
-      color: #666;
+      margin-top: 40px;
+      color: #999;
       font-size: 0.9rem;
+    }
+
+    .actions {
+      text-align: center;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Création de groupes – ZENOS Tour</h1>
 
-  <div id="groupes"></div>
+  <h1>Groupes ZENOS – ScanProf</h1>
 
-  <button id="exportCSV">Télécharger en CSV</button>
+  <div class="actions">
+    <a class="button" href="index.html">🏠 Accueil</a>
+    <button class="button" onclick="exporterCSV()">📥 Exporter en CSV</button>
+  </div>
+
+  <div class="group-container" id="groupes"></div>
 
   <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    ScanProf – Équipe EPS Lycée Vauban – LUXEMBOURG – JB
   </footer>
 
   <script src="zenos.js"></script>
