@@ -81,6 +81,8 @@
     <button class="button danger" onclick="resetDonnees()">🗑 Réinitialiser les données</button>
   </div>
 
+  <input type="file" id="importCsvInput" accept=".csv" style="margin: 20px auto; display: block;" />
+
   <table>
     <thead id="entete-tableau"></thead>
     <tbody id="corps-tableau"></tbody>
@@ -154,6 +156,57 @@
         location.reload();
       }
     }
+
+    document.getElementById("importCsvInput").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const text = e.target.result;
+        const lignes = text.trim().split("\n").slice(1);
+        const liste = JSON.parse(localStorage.getItem("eleves") || "[]");
+        let ajoutCount = 0;
+
+        lignes.forEach(ligne => {
+          const [nom, prenom, classe, sexe, distance, vitesse, vma] = ligne.split(",");
+
+          const eleve = {
+            nom: nom.trim(),
+            prenom: prenom.trim(),
+            classe: classe.trim(),
+            sexe: sexe.trim(),
+            distance: parseFloat(distance),
+            vitesse: parseFloat(vitesse),
+            vma: parseFloat(vma)
+          };
+
+          if (!eleve.nom || !eleve.prenom || isNaN(eleve.vma)) return;
+
+          const existe = liste.some(e =>
+            e.nom === eleve.nom &&
+            e.prenom === eleve.prenom &&
+            e.classe === eleve.classe
+          );
+
+          if (!existe) {
+            liste.push(eleve);
+            ajoutCount++;
+          }
+        });
+
+        if (ajoutCount > 0) {
+          liste.sort((a, b) => a.nom.localeCompare(b.nom));
+          localStorage.setItem("eleves", JSON.stringify(liste));
+          alert(`✅ ${ajoutCount} élève(s) importé(s) avec succès.`);
+          location.reload();
+        } else {
+          alert("⚠️ Aucun nouvel élève trouvé ou le fichier est vide.");
+        }
+      };
+
+      reader.readAsText(file);
+    });
 
     afficherTableau();
   </script>
