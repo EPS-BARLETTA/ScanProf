@@ -47,6 +47,14 @@
       background-color: #2980b9;
     }
 
+    .danger {
+      background-color: #e74c3c;
+    }
+
+    .danger:hover {
+      background-color: #c0392b;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -62,6 +70,11 @@
     th {
       background-color: #3498db;
       color: white;
+    }
+
+    .actions {
+      text-align: center;
+      margin: 20px 0;
     }
 
     footer {
@@ -84,13 +97,19 @@
     <button onclick="trierTableau()">Appliquer le tri</button>
   </div>
 
-  <table id="participantsTable">
+  <div class="actions">
+    <a class="button" href="index.html">🏠 Accueil</a>
+    <button class="button" onclick="exporterCSV()">📥 Export CSV</button>
+    <button class="button danger" onclick="resetDonnees()">🗑 Réinitialiser</button>
+  </div>
+
+  <table>
     <thead id="entete-tableau"></thead>
     <tbody id="corps-tableau"></tbody>
   </table>
 
   <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    ScanProf – Équipe EPS Lycée Vauban – LUXEMBOURG – JB
   </footer>
 
   <script src="tri-dynamique.js"></script>
