@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Résumé des élèves scannés – ScanProf</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f7f7f7;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .actions {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .button {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 20px;
+      background-color: #3498db;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .button:hover {
+      background-color: #2980b9;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #999;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Résumé des élèves scannés</h1>
+
+  <div class="actions">
+    <a class="button" href="tri.html">🔍 Accéder au tri</a>
+    <button class="button" onclick="exporterCSV()">📥 Exporter en CSV</button>
+  </div>
+
+  <table>
+    <thead id="entete-tableau"></thead>
+    <tbody id="corps-tableau"></tbody>
+  </table>
+
+  <footer>
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+  </footer>
+
+  <script>
+    const tableauEleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+
+    function afficherTableau() {
+      const entete = document.getElementById("entete-tableau");
+      const corps = document.getElementById("corps-tableau");
+
+      entete.innerHTML = "";
+      corps.innerHTML = "";
+
+      if (tableauEleves.length === 0) {
+        corps.innerHTML = "<tr><td colspan='100%'>Aucun élève scanné</td></tr>";
+        return;
+      }
+
+      const champs = Object.keys(tableauEleves[0]);
+
+      const ligneEntete = document.createElement("tr");
+      champs.forEach(champ => {
+        const th = document.createElement("th");
+        th.textContent = champ;
+        ligneEntete.appendChild(th);
+      });
+      entete.appendChild(ligneEntete);
+
+      tableauEleves.forEach(eleve => {
+        const tr = document.createElement("tr");
+        champs.forEach(champ => {
+          const td = document.createElement("td");
+          td.textContent = eleve[champ];
+          tr.appendChild(td);
+        });
+        corps.appendChild(tr);
+      });
+    }
+
+    function exporterCSV() {
+      if (tableauEleves.length === 0) return;
+
+      const champs = Object.keys(tableauEleves[0]);
+      const lignes = [champs.join(",")];
+
+      tableauEleves.forEach(eleve => {
+        const ligne = champs.map(c => `"${(eleve[c] || "").toString().replace(/"/g, '""')}"`).join(",");
+        lignes.push(ligne);
+      });
+
+      const csvContent = lignes.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const lien = document.createElement("a");
+      lien.setAttribute("href", url);
+      lien.setAttribute("download", "eleves_scanprof.csv");
+      document.body.appendChild(lien);
+      lien.click();
+      document.body.removeChild(lien);
+    }
+
+    afficherTableau();
+  </script>
+</body>
+</html>
