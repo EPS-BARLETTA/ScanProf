@@ -1,83 +1,106 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const groupesContainer = document.getElementById("groupesContainer");
-  const btnExport = document.getElementById("btnExportCSV");
-  const btnImprimer = document.getElementById("btnImprimer");
+  const eleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+  const tableauBody = document.querySelector("#zenosTable tbody");
 
-  const liste = JSON.parse(localStorage.getItem("eleves") || "[]");
-
-  if (!liste.length) {
-    groupesContainer.innerHTML = "<p>Aucun élève trouvé. Veuillez scanner des QR codes ou importer un fichier CSV via RunStats.</p>";
-    btnExport.disabled = true;
-    btnImprimer.disabled = true;
+  if (!eleves.length) {
+    tableauBody.innerHTML = "<tr><td colspan='4'>Aucun élève disponible. Veuillez scanner d’abord avec RunStats.</td></tr>";
     return;
   }
 
-  const donneesValides = liste.filter(e =>
-    e.nom && e.prenom && e.classe && e.sexe && !isNaN(e.vma)
-  );
-
-  // Tri décroissant VMA
-  donneesValides.sort((a, b) => b.vma - a.vma);
-
-  const filles = donneesValides.filter(e => e.sexe.toLowerCase().startsWith("f"));
-  const garcons = donneesValides.filter(e => e.sexe.toLowerCase().startsWith("g"));
+  // Tri par VMA décroissante puis alternance par sexe pour équilibrer
+  eleves.sort((a, b) => b.vma - a.vma);
 
   const groupes = [];
   const tailleGroupe = 4;
+  let groupeActuel = [];
 
-  while (filles.length || garcons.length) {
-    const groupe = [];
+  const garcons = eleves.filter(e => e.sexe.toUpperCase() === "G");
+  const filles = eleves.filter(e => e.sexe.toUpperCase() === "F");
 
-    if (filles.length > 0) groupe.push(filles.shift());
-    if (garcons.length > 0) groupe.push(garcons.shift());
-    if (filles.length > 0) groupe.push(filles.pop());
-    if (garcons.length > 0) groupe.push(garcons.pop());
+  while (garcons.length || filles.length) {
+    let prochain = null;
 
-    groupes.push(groupe.filter(Boolean));
+    if ((groupeActuel.filter(e => e.sexe === "F").length < 2 || !garcons.length) && filles.length) {
+      prochain = filles.shift();
+    } else if (garcons.length) {
+      prochain = garcons.shift();
+    }
+
+    if (prochain) groupeActuel.push(prochain);
+
+    if (groupeActuel.length === tailleGroupe) {
+      groupes.push(groupeActuel);
+      groupeActuel = [];
+    }
   }
 
-  // Affichage HTML
-  groupesContainer.innerHTML = "";
+  if (groupeActuel.length > 0) groupes.push(groupeActuel); // dernier groupe s'il reste
+
   groupes.forEach((groupe, index) => {
-    const div = document.createElement("div");
-    div.className = "group";
-    div.innerHTML = `
-      <h3>Groupe ${index + 1}</h3>
-      <ul>
-        ${groupe.map(e => `
-          <li>${e.prenom} ${e.nom} – ${e.classe} – ${e.sexe} – Distance: ${e.distance} m – Vitesse: ${e.vitesse} km/h – VMA : ${e.vma} km/h</li>
-        `).join("")}
-      </ul>
-    `;
-    groupesContainer.appendChild(div);
+    groupe.forEach(eleve => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>Groupe ${index + 1}</td>
+        <td>${eleve.nom}</td>
+        <td>${eleve.prenom}</td>
+        <td>${eleve.sexe}</td>
+        <td>${eleve.vma} km/h</td>
+        <td>${eleve.vitesse} km/h</td>
+        <td>${eleve.distance} m</td>
+      `;
+      tableauBody.appendChild(tr);
+    });
   });
 
-  // 📥 Export CSV
-  btnExport.addEventListener("click", () => {
-    const lignes = [["Groupe", "Nom", "Prénom", "Classe", "Sexe", "Distance", "Vitesse", "VMA"]];
-    groupes.forEach((groupe, index) => {
-      groupe.forEach(e => {
-        lignes.push([
-          `Groupe ${index + 1}`,
-          e.nom, e.prenom, e.classe, e.sexe,
-          e.distance, e.vitesse, e.vma
-        ]);
-      });
+  // 🎯 Bouton Imprimer
+  document.getElementById("imprimerBtn").addEventListener("click", () => {
+    window.print();
+  });
+
+  // 📊 Bouton Radar - Affiche un radar comparatif des groupes (VMA, Vitesse, Distance, Mixité)
+  document.getElementById("radarBtn").addEventListener("click", () => {
+    const ctx = document.getElementById("radarChart").getContext("2d");
+
+    const labels = ["VMA Moy.", "Vitesse Moy.", "Distance Moy.", "Mixité (%)"];
+    const datasets = groupes.map((groupe, i) => {
+      const vma = groupe.reduce((a, b) => a + b.vma, 0) / groupe.length;
+      const vit = groupe.reduce((a, b) => a + b.vitesse, 0) / groupe.length;
+      const dist = groupe.reduce((a, b) => a + b.distance, 0) / groupe.length;
+      const mix = (groupe.filter(e => e.sexe === "F").length / groupe.length) * 100;
+
+      return {
+        label: `Groupe ${i + 1}`,
+        data: [vma, vit, dist, mix],
+        fill: true
+      };
     });
 
-    const csvContent = lignes.map(l => l.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    new Chart(ctx, {
+      type: "radar",
+      data: {
+        labels,
+        datasets
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            suggestedMin: 0,
+            suggestedMax: 100
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: "Équilibre des groupes (ZENOS Tour)"
+          },
+          legend: {
+            position: 'top'
+          }
+        }
+      }
+    });
 
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "groupes_zenos.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  });
-
-  // 🖨 Impression
-  btnImprimer.addEventListener("click", () => {
-    window.print();
+    document.getElementById("graphiqueSection").style.display = "block";
   });
 });
