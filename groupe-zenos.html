@@ -16,7 +16,7 @@
       text-align: center;
       color: #2c3e50;
     }
-    #generateBtn, #exportBtn {
+    #generateBtn, #exportBtn, #printBtn, #homeBtn {
       display: block;
       margin: 20px auto;
       padding: 10px 20px;
@@ -27,9 +27,10 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    #exportBtn {
-      background-color: #2980b9;
-    }
+    #exportBtn { background-color: #2980b9; }
+    #printBtn { background-color: #8e44ad; }
+    #homeBtn { background-color: #7f8c8d; }
+
     #groupsContainer {
       display: flex;
       flex-wrap: wrap;
@@ -70,12 +71,20 @@
       color: #666;
       font-size: 0.9rem;
     }
+    @media print {
+      body { background: white; }
+      button, canvas, #charts { display: none !important; }
+      .group { page-break-inside: avoid; }
+      #groupsContainer { flex-wrap: wrap; gap: 0; justify-content: start; }
+      .group { width: 100%; border: none; padding: 10px; }
+    }
   </style>
 </head>
 <body>
   <h1>Groupes ZENOS – ScanProf</h1>
   <button id="generateBtn">Créer les groupes ZENOS</button>
   <button id="exportBtn" style="display:none">Exporter en CSV</button>
+  <button id="printBtn" style="display:none">Imprimer les groupes</button>
 
   <div id="groupsContainer"></div>
 
@@ -83,6 +92,8 @@
     <canvas id="repartitionSexe"></canvas>
     <canvas id="vmaMoyenne"></canvas>
   </div>
+
+  <button id="homeBtn" onclick="location.href='index.html'">Retour à l'accueil</button>
 
   <footer>
     ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
@@ -150,6 +161,7 @@
         container.appendChild(div);
       });
       document.getElementById("exportBtn").style.display = "block";
+      document.getElementById("printBtn").style.display = "block";
     }
 
     function sauvegarderGroupesCSV(groupes) {
@@ -228,6 +240,7 @@
     }
 
     document.getElementById("generateBtn").addEventListener("click", genererGroupesZenos);
+    document.getElementById("printBtn").addEventListener("click", () => window.print());
   </script>
 </body>
 </html>
