@@ -1,90 +1,108 @@
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("groupesContainer");
-  const radarCanvas = document.getElementById("radarCanvas");
-  const btnRadar = document.getElementById("btnAfficherRadar");
+  const radarCanvas = document.getElementById("radarChart");
 
   const eleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+
   if (!eleves.length) {
-    container.innerHTML = "<p>Aucun élève trouvé. Veuillez scanner ou importer un fichier RunStats.</p>";
+    container.innerHTML = "<p>Aucun élève chargé. Veuillez scanner les données depuis RunStats.</p>";
     return;
   }
 
-  // Fonction de tri mixte et VMA pour groupes hétérogènes
-  function genererGroupesHeterogenes(liste, taille = 4) {
-    const garcons = liste.filter(e => e.sexe.toLowerCase().startsWith("g")).sort((a,b) => b.vma - a.vma);
-    const filles = liste.filter(e => e.sexe.toLowerCase().startsWith("f")).sort((a,b) => b.vma - a.vma);
-    const groupes = [];
+  // Filtrer uniquement les élèves avec données complètes
+  const valides = eleves.filter(e =>
+    e.nom && e.prenom && e.sexe && e.classe && e.vma && !isNaN(parseFloat(e.vma))
+  );
 
-    while (garcons.length || filles.length) {
-      const groupe = [];
-      for (let i = 0; i < taille; i++) {
-        let source = (i % 2 === 0) ? garcons : filles;
-        if (!source.length) source = garcons.length ? garcons : filles;
-        if (source.length) groupe.push(source.shift());
-      }
-      groupes.push(groupe);
+  if (valides.length < 4) {
+    container.innerHTML = "<p>Pas assez de données valides pour former des groupes.</p>";
+    return;
+  }
+
+  // Trier par VMA décroissant
+  valides.sort((a, b) => b.vma - a.vma);
+
+  // Créer les groupes de manière hétérogène (type 1er + dernier)
+  const groupes = [];
+  const total = valides.length;
+  const tailleGroupe = 4;
+
+  for (let i = 0; i < Math.floor(total / tailleGroupe); i++) {
+    groupes.push([]);
+  }
+
+  let i = 0;
+  let sens = 1;
+  for (const eleve of valides) {
+    groupes[i].push(eleve);
+    i += sens;
+    if (i === groupes.length || i < 0) {
+      sens *= -1;
+      i += sens;
     }
-
-    return groupes;
   }
 
-  const groupes = genererGroupesHeterogenes(eleves);
+  // Affichage du tableau
+  let html = "";
+  groupes.forEach((groupe, idx) => {
+    html += `<h3>Groupe ${idx + 1}</h3>`;
+    html += `<table><thead><tr><th>Nom</th><th>Prénom</th><th>Sexe</th><th>Classe</th><th>Distance</th><th>Vitesse</th><th>VMA</th></tr></thead><tbody>`;
+    groupe.forEach(e => {
+      html += `<tr><td>${e.nom}</td><td>${e.prenom}</td><td>${e.sexe}</td><td>${e.classe}</td><td>${e.distance}</td><td>${e.vitesse}</td><td>${e.vma}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
 
-  function afficherGroupes(groupes) {
-    container.innerHTML = groupes.map((groupe, i) => `
-      <h3>Groupe ${i + 1}</h3>
-      <table>
-        <thead>
-          <tr><th>Nom</th><th>Prénom</th><th>Sexe</th><th>Classe</th><th>Distance</th><th>Vitesse</th><th>VMA</th></tr>
-        </thead>
-        <tbody>
-          ${groupe.map(e => `
-            <tr>
-              <td>${e.nom}</td>
-              <td>${e.prenom}</td>
-              <td>${e.sexe}</td>
-              <td>${e.classe}</td>
-              <td>${e.distance || ""}</td>
-              <td>${e.vitesse || ""}</td>
-              <td>${e.vma || ""}</td>
-            </tr>`).join("")}
-        </tbody>
-      </table>
-    `).join("");
-  }
+  container.innerHTML = html;
 
-  afficherGroupes(groupes);
+  // Export CSV
+  window.exportCSV = function () {
+    const csvRows = [["Groupe", "Nom", "Prénom", "Sexe", "Classe", "Distance", "Vitesse", "VMA"]];
+    groupes.forEach((groupe, index) => {
+      groupe.forEach(e => {
+        csvRows.push([index + 1, e.nom, e.prenom, e.sexe, e.classe, e.distance, e.vitesse, e.vma]);
+      });
+    });
 
-  btnRadar.addEventListener("click", () => {
-    radarCanvas.style.display = "block";
+    const csvContent = csvRows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "groupes_zenos.csv";
+    link.click();
+  };
+
+  // Radar chart
+  window.afficherRadar = function () {
+    if (radarCanvas.style.display === "block") return; // évite de le recréer
+
     const labels = groupes.map((_, i) => `Groupe ${i + 1}`);
-
-    const vmaMoy = groupes.map(g => moyenne(g.map(e => e.vma)));
-    const vitesseMoy = groupes.map(g => moyenne(g.map(e => e.vitesse)));
-    const distanceMoy = groupes.map(g => moyenne(g.map(e => e.distance)));
+    const vmas = groupes.map(g => moy(g.map(e => parseFloat(e.vma))));
+    const vitesses = groupes.map(g => moy(g.map(e => parseFloat(e.vitesse))));
+    const distances = groupes.map(g => moy(g.map(e => parseFloat(e.distance))));
     const mixite = groupes.map(g => {
-      const f = g.filter(e => e.sexe.toLowerCase().startsWith("f")).length;
-      const gCount = g.length;
-      return gCount ? (f / gCount) * 100 : 0;
+      const filles = g.filter(e => e.sexe.toLowerCase() === "f").length;
+      const garcons = g.filter(e => e.sexe.toLowerCase() === "m").length;
+      return Math.min(filles, garcons) / Math.max(filles || 1, garcons || 1);
     });
 
     const data = {
       labels,
       datasets: [
         {
-          label: "VMA moyenne",
-          data: vmaMoy,
+          label: "VMA",
+          data: vmas,
         },
         {
-          label: "Vitesse moyenne",
-          data: vitesseMoy,
+          label: "Vitesse",
+          data: vitesses,
         },
         {
-          label: "Distance moyenne",
-          data: distanceMoy,
+          label: "Distance",
+          data: distances,
         },
         {
-          label: "Mixité (%)",
+          label: "Mixité (équilibre F/G)",
           data: mixite,
         }
       ]
@@ -94,14 +112,21 @@ document.addEventListener("DOMContentLoaded", () => {
       type: "radar",
       data,
       options: {
-        elements: { line: { borderWidth: 3 } },
-        scales: { r: { min: 0, suggestedMax: 100 } }
+        responsive: true,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: Math.max(...vmas.concat(vitesses, distances)) + 1
+          }
+        }
       }
     });
-  });
 
-  function moyenne(tab) {
-    const nums = tab.filter(x => typeof x === "number" && !isNaN(x));
-    return nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1) : 0;
+    radarCanvas.style.display = "block";
+  };
+
+  function moy(arr) {
+    const valid = arr.filter(x => !isNaN(x));
+    return valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(2) : 0;
   }
 });
