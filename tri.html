@@ -1,43 +1,40 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ScanProf - Tri des participants</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f0f6ff;
       padding: 20px;
-      background-color: #f0f8ff;
     }
     h1 {
       text-align: center;
-      margin-bottom: 20px;
+      color: #2c3e50;
     }
-    .btn-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
+    .controls {
+      text-align: center;
+      margin: 20px 0;
     }
-    button {
-      padding: 10px 15px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
+    .controls button {
+      margin: 5px;
+      padding: 10px 20px;
       background-color: #3498db;
       color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    button:hover {
+    .controls button:hover {
       background-color: #2980b9;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 20px;
     }
     th, td {
       border: 1px solid #ccc;
@@ -45,32 +42,88 @@
       text-align: center;
     }
     th {
-      background-color: #e0e0e0;
+      background-color: #3498db;
+      color: white;
     }
-    .footer {
-      margin-top: 30px;
+    footer {
       text-align: center;
-      color: #777;
-      font-size: 0.9em;
+      margin-top: 30px;
+      font-size: 0.8em;
+      color: #666;
     }
   </style>
 </head>
 <body>
   <h1>Participants enregistrés</h1>
-
-  <div class="btn-container">
-    <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
-    <button onclick="trierPar()">🔍 Trier selon un critère</button>
-    <button onclick="window.location.href='groupe-zenos.html'">👟 Groupe ZENOS Tour</button>
-    <button onclick="window.print()">🖨️ Imprimer</button>
+  <div class="controls">
+    <button onclick="goHome()">🏠 Retour à l'accueil</button>
+    <button onclick="sortBy('nom')">⚙️ Trier selon un critère</button>
+    <button onclick="goZenos()">🧬 Groupe ZENOS Tour</button>
+    <button onclick="window.print()">🖶️ Imprimer</button>
   </div>
 
-  <div id="tableauParticipants"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Classe</th>
+        <th>Sexe</th>
+        <th>Distance</th>
+        <th>Vitesse</th>
+        <th>VMA</th>
+      </tr>
+    </thead>
+    <tbody id="elevesTableBody">
+    </tbody>
+  </table>
 
-  <footer class="footer">
+  <footer>
     ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
-  <script src="tri.js"></script>
+  <script>
+    const tableBody = document.getElementById("elevesTableBody");
+    const eleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+
+    function renderTable(data) {
+      tableBody.innerHTML = data.map(eleve => `
+        <tr>
+          <td>${eleve.nom}</td>
+          <td>${eleve.prenom}</td>
+          <td>${eleve.classe}</td>
+          <td>${eleve.sexe}</td>
+          <td>${eleve.distance || ""}</td>
+          <td>${eleve.vitesse || ""}</td>
+          <td>${eleve.vma || ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    function sortBy(key) {
+      eleves.sort((a, b) => {
+        if (typeof a[key] === "string") {
+          return a[key].localeCompare(b[key]);
+        } else {
+          return (a[key] || 0) - (b[key] || 0);
+        }
+      });
+      renderTable(eleves);
+    }
+
+    function goHome() {
+      window.location.href = "index.html";
+    }
+
+    function goZenos() {
+      window.location.href = "groupe-zenos.html";
+    }
+
+    if (!eleves.length) {
+      tableBody.innerHTML = '<tr><td colspan="7">Aucun élève chargé. Veuillez d\'abord scanner ou importer des données.</td></tr>';
+    } else {
+      renderTable(eleves);
+    }
+  </script>
 </body>
 </html>
