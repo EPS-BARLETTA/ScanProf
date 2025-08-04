@@ -136,6 +136,7 @@
         const valB = typeof b[key] === "string" ? b[key].toLowerCase() : b[key];
         return desc ? valB - valA : valA > valB ? 1 : valA < valB ? -1 : 0;
       });
+      localStorage.setItem("eleves", JSON.stringify(participants));
       renderTable();
     }
 
@@ -148,6 +149,8 @@
         const valB = isNaN(b[critere]) ? b[critere] : parseFloat(b[critere]);
         return desc ? valB - valA : valA - valB;
       });
+
+      localStorage.setItem("eleves", JSON.stringify(participants));
       renderTable();
     }
 
