@@ -3,110 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tri des participants – ScanProf</title>
+  <title>ScanProf - Tri des participants</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fafafa;
       padding: 20px;
+      background-color: #f0f8ff;
     }
-
     h1 {
       text-align: center;
-      color: #2c3e50;
+      margin-bottom: 20px;
     }
-
-    .filters {
+    .btn-container {
       display: flex;
-      justify-content: center;
       flex-wrap: wrap;
-      gap: 15px;
-      margin: 30px 0;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-
-    .filters button, .footer-buttons button {
+    button {
       padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
       border: none;
+      border-radius: 6px;
       background-color: #3498db;
       color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
     }
-
-    .filters button:hover, .footer-buttons button:hover {
+    button:hover {
       background-color: #2980b9;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
     }
-
     th, td {
-      padding: 10px;
       border: 1px solid #ccc;
+      padding: 10px;
       text-align: center;
     }
-
     th {
-      background-color: #3498db;
-      color: white;
+      background-color: #e0e0e0;
     }
-
-    .footer-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
+    .footer {
       margin-top: 30px;
-    }
-
-    footer {
       text-align: center;
-      margin-top: 40px;
-      color: #666;
-      font-size: 0.9rem;
+      color: #777;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
-  <h1>Tri des participants – ScanProf</h1>
+  <h1>Participants enregistrés</h1>
 
-  <div class="filters">
-    <button onclick="sortBy('nom')">Nom A-Z</button>
-    <button onclick="sortBy('vitesse')">Vitesse ↑</button>
-    <button onclick="sortBy('vitesse', true)">Vitesse ↓</button>
-    <button onclick="sortBy('vma')">VMA ↑</button>
-    <button onclick="sortBy('vma', true)">VMA ↓</button>
-    <button onclick="sortBy('distance')">Distance ↑</button>
-    <button onclick="sortBy('distance', true)">Distance ↓</button>
-  </div>
-
-  <table id="participantsTable">
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Prénom</th>
-        <th>Classe</th>
-        <th>Sexe</th>
-        <th>Distance</th>
-        <th>Vitesse</th>
-        <th>VMA</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div class="footer-buttons">
+  <div class="btn-container">
+    <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+    <button onclick="trierPar()">🔍 Trier selon un critère</button>
+    <button onclick="window.location.href='groupe-zenos.html'">👟 Groupe ZENOS Tour</button>
     <button onclick="window.print()">🖨️ Imprimer</button>
-    <button onclick="location.href='index.html'">🏠 Retour à l'accueil</button>
-    <button onclick="location.href='groupe-zenos.html'">🎯 Groupe ZENOS Tour</button>
   </div>
 
-  <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+  <div id="tableauParticipants"></div>
+
+  <footer class="footer">
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
   <script src="tri.js"></script>
