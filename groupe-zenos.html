@@ -5,41 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Groupes ZENOS Tour</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-    h1 { text-align: center; }
-    .controls { text-align: center; margin-bottom: 20px; }
-    .controls button {
-      margin: 5px;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7faff;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .btn-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      margin: 6px;
       padding: 10px 20px;
-      background: #3498db;
-      color: white;
+      font-size: 15px;
+      background-color: #3498db;
       border: none;
+      color: white;
       border-radius: 5px;
       cursor: pointer;
     }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-    th { background-color: #2980b9; color: white; }
-    canvas { max-width: 600px; margin: 20px auto; display: block; }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .warning {
+      color: #c0392b;
+      font-weight: bold;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .radar-container {
+      max-width: 600px;
+      margin: 30px auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.85em;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <h1>Groupes ZENOS Tour</h1>
-  <div class="controls">
-    <button onclick="location.href='index.html'">🏠 Retour à l'accueil</button>
-    <button onclick="window.print()">🖶️ Imprimer</button>
-    <button id="btnAfficherRadar">📊 Afficher l'équilibre des groupes</button>
+
+  <p class="warning">
+    ⚠️ Cette fonctionnalité est uniquement compatible avec des données issues de l'application <strong>RunStats</strong><br/>
+    Elle nécessite les colonnes : Nom, Prénom, Classe, Sexe, Distance, Vitesse, VMA.
+  </p>
+
+  <div class="btn-container">
+    <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+    <button onclick="window.print()">🖶 Imprimer</button>
+    <button onclick="exportCSV()">📁 Exporter CSV</button>
+    <button onclick="afficherRadar()">📊 Afficher l'équilibre des groupes</button>
   </div>
 
   <div id="groupesContainer"></div>
-  <canvas id="radarCanvas" style="display:none;"></canvas>
 
-  <footer style="text-align:center;margin-top:30px;color:#777;">
-    Page compatible uniquement avec les fichiers générés via RunStats.
-  </footer>
+  <div class="radar-container">
+    <canvas id="radarChart" style="display:none;"></canvas>
+  </div>
 
+  <footer>ScanProf - Réseau ZENOS - Lycée Vauban - JB</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="zenos.js"></script>
 </body>
 </html>
