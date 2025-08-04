@@ -17,35 +17,42 @@
       color: #2c3e50;
     }
 
-    .filters {
+    .top-buttons {
       display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .filters, .actions {
+      display: flex;
+      gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 15px;
-      margin: 30px 0;
+      margin-bottom: 20px;
     }
 
-    .filters button, .filters select {
+    button {
       padding: 10px 15px;
       border: none;
-      border-radius: 5px;
-      font-size: 1rem;
-    }
-
-    .filters button {
       background-color: #3498db;
       color: white;
+      border-radius: 5px;
       cursor: pointer;
     }
 
-    .filters button:hover {
+    button:hover {
       background-color: #2980b9;
+    }
+
+    input[type="file"] {
+      margin-bottom: 10px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
     th, td {
@@ -70,6 +77,11 @@
 <body>
   <h1>Tri des participants – ScanProf</h1>
 
+  <div class="top-buttons">
+    <button onclick="window.location.href='index.html'">⬅️ Retour à l’accueil</button>
+    <input type="file" id="importCsvInput" accept=".csv" />
+  </div>
+
   <div class="filters">
     <button onclick="sortBy('nom')">Nom A-Z</button>
     <button onclick="sortBy('vitesse')">Vitesse ↑</button>
@@ -80,19 +92,22 @@
     <button onclick="sortBy('distance', true)">Distance ↓</button>
   </div>
 
-  <div class="filters">
-    <select id="critereSelect">
-      <option value="">Choisir un critère personnalisé</option>
-    </select>
-    <button onclick="triPersonnalise(false)">Trier ↑</button>
-    <button onclick="triPersonnalise(true)">Trier ↓</button>
+  <div class="actions">
+    <button onclick="window.location.href='groupe-zenos.html'">👥 Groupe ZENOS Tour</button>
+    <button onclick="printTable()">🖨️ Imprimer le tableau</button>
   </div>
-
-  <input type="file" id="importCsvInput" accept=".csv" style="margin: 20px auto; display: block;" />
 
   <table id="participantsTable">
     <thead>
-      <tr id="tableHeader"></tr>
+      <tr>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Classe</th>
+        <th>Sexe</th>
+        <th>Distance</th>
+        <th>Vitesse</th>
+        <th>VMA</th>
+      </tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -101,125 +116,6 @@
     ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
-  <script>
-    const tableBody = document.querySelector("#participantsTable tbody");
-    const tableHeader = document.getElementById("tableHeader");
-    let participants = JSON.parse(localStorage.getItem("eleves") || "[]");
-
-    function renderTable() {
-      tableBody.innerHTML = "";
-      tableHeader.innerHTML = "";
-
-      if (participants.length === 0) return;
-
-      const champs = Object.keys(participants[0]);
-      champs.forEach(c => {
-        const th = document.createElement("th");
-        th.textContent = c;
-        tableHeader.appendChild(th);
-      });
-
-      participants.forEach(eleve => {
-        const row = document.createElement("tr");
-        champs.forEach(c => {
-          const td = document.createElement("td");
-          td.textContent = eleve[c];
-          row.appendChild(td);
-        });
-        tableBody.appendChild(row);
-      });
-    }
-
-    function sortBy(key, desc = false) {
-      participants.sort((a, b) => {
-        const valA = typeof a[key] === "string" ? a[key].toLowerCase() : a[key];
-        const valB = typeof b[key] === "string" ? b[key].toLowerCase() : b[key];
-        return desc ? valB - valA : valA > valB ? 1 : valA < valB ? -1 : 0;
-      });
-      localStorage.setItem("eleves", JSON.stringify(participants));
-      renderTable();
-    }
-
-    function triPersonnalise(desc) {
-      const critere = document.getElementById("critereSelect").value;
-      if (!critere) return alert("Choisis un critère valide");
-
-      participants.sort((a, b) => {
-        const valA = isNaN(a[critere]) ? a[critere] : parseFloat(a[critere]);
-        const valB = isNaN(b[critere]) ? b[critere] : parseFloat(b[critere]);
-        return desc ? valB - valA : valA - valB;
-      });
-
-      localStorage.setItem("eleves", JSON.stringify(participants));
-      renderTable();
-    }
-
-    document.getElementById("importCsvInput").addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const text = e.target.result;
-        const lignes = text.trim().split("\n").slice(1);
-        let ajoutCount = 0;
-
-        lignes.forEach(ligne => {
-          const [nom, prenom, classe, sexe, distance, vitesse, vma] = ligne.split(",");
-
-          const eleve = {
-            nom: nom.trim(),
-            prenom: prenom.trim(),
-            classe: classe.trim(),
-            sexe: sexe.trim(),
-            distance: parseFloat(distance),
-            vitesse: parseFloat(vitesse),
-            vma: parseFloat(vma)
-          };
-
-          if (!eleve.nom || !eleve.prenom || isNaN(eleve.vma)) return;
-
-          const existe = participants.some(e =>
-            e.nom === eleve.nom &&
-            e.prenom === eleve.prenom &&
-            e.classe === eleve.classe
-          );
-
-          if (!existe) {
-            participants.push(eleve);
-            ajoutCount++;
-          }
-        });
-
-        if (ajoutCount > 0) {
-          participants.sort((a, b) => a.nom.localeCompare(b.nom));
-          localStorage.setItem("eleves", JSON.stringify(participants));
-          alert(`✅ ${ajoutCount} élève(s) importé(s)`);
-          initCritereSelect();
-          renderTable();
-        } else {
-          alert("⚠️ Aucun nouvel élève trouvé ou fichier invalide.");
-        }
-      };
-
-      reader.readAsText(file);
-    });
-
-    function initCritereSelect() {
-      const select = document.getElementById("critereSelect");
-      select.innerHTML = '<option value="">Choisir un critère personnalisé</option>';
-      if (participants.length > 0) {
-        Object.keys(participants[0]).forEach(k => {
-          const opt = document.createElement("option");
-          opt.value = k;
-          opt.textContent = k;
-          select.appendChild(opt);
-        });
-      }
-    }
-
-    initCritereSelect();
-    renderTable();
-  </script>
+  <script src="tri.js"></script>
 </body>
 </html>
