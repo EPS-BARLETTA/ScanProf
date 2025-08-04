@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
   }
 
-  function sortByKey(key, ascending = true) {
+  function sortBy(key, ascending = true) {
     eleves.sort((a, b) => {
       if (typeof a[key] === "number") {
         return ascending ? a[key] - b[key] : b[key] - a[key];
@@ -34,32 +34,32 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable(eleves);
   }
 
-  // Tri par défaut
+  // Tri initial (par nom)
   renderTable(eleves);
 
-  // Boutons de tri
-  document.getElementById("sortNom").addEventListener("click", () => sortByKey("nom", true));
-  document.getElementById("sortClasse").addEventListener("click", () => sortByKey("classe", true));
-  document.getElementById("sortSexe").addEventListener("click", () => sortByKey("sexe", true));
-  document.getElementById("sortDistanceAsc").addEventListener("click", () => sortByKey("distance", true));
-  document.getElementById("sortDistanceDesc").addEventListener("click", () => sortByKey("distance", false));
-  document.getElementById("sortVitesseAsc").addEventListener("click", () => sortByKey("vitesse", true));
-  document.getElementById("sortVitesseDesc").addEventListener("click", () => sortByKey("vitesse", false));
-  document.getElementById("sortVma").addEventListener("click", () => sortByKey("vma", true));
+  // Fonctions boutons
+  window.sortBy = (key) => sortBy(key);
 
-  // Bouton Imprimer
-  document.getElementById("btnImprimer").addEventListener("click", () => {
-    window.print();
-  });
-
-  // Bouton Retour accueil
-  document.getElementById("btnAccueil").addEventListener("click", () => {
+  window.goHome = () => {
     window.location.href = "index.html";
-  });
+  };
 
-  // Bouton Groupe ZENOS
-  document.getElementById("btnZenos").addEventListener("click", () => {
+  window.goZenos = () => {
     window.location.href = "groupe-zenos.html";
-  });
-});
+  };
 
+  window.exportCSV = () => {
+    const headers = ["Nom", "Prénom", "Classe", "Sexe", "Distance", "Vitesse", "VMA"];
+    const rows = eleves.map(e =>
+      [e.nom, e.prenom, e.classe, e.sexe, e.distance || "", e.vitesse || "", e.vma || ""]
+    );
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "participants_scanprof.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+});
