@@ -19,18 +19,22 @@
 
     .filters {
       display: flex;
-      justify-content: center;
       flex-wrap: wrap;
+      justify-content: center;
       gap: 15px;
       margin: 30px 0;
     }
 
-    .filters button {
+    .filters button, .filters select {
       padding: 10px 15px;
       border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    .filters button {
       background-color: #3498db;
       color: white;
-      border-radius: 5px;
       cursor: pointer;
     }
 
@@ -76,18 +80,19 @@
     <button onclick="sortBy('distance', true)">Distance ↓</button>
   </div>
 
+  <div class="filters">
+    <select id="critereSelect">
+      <option value="">Choisir un critère personnalisé</option>
+    </select>
+    <button onclick="triPersonnalise(false)">Trier ↑</button>
+    <button onclick="triPersonnalise(true)">Trier ↓</button>
+  </div>
+
   <input type="file" id="importCsvInput" accept=".csv" style="margin: 20px auto; display: block;" />
 
   <table id="participantsTable">
     <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Classe</th>
-        <th>Sexe</th>
-        <th>Distance</th>
-        <th>Vitesse</th>
-        <th>VMA</th>
-      </tr>
+      <tr id="tableHeader"></tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -98,20 +103,29 @@
 
   <script>
     const tableBody = document.querySelector("#participantsTable tbody");
+    const tableHeader = document.getElementById("tableHeader");
     let participants = JSON.parse(localStorage.getItem("eleves") || "[]");
 
     function renderTable() {
       tableBody.innerHTML = "";
+      tableHeader.innerHTML = "";
+
+      if (participants.length === 0) return;
+
+      const champs = Object.keys(participants[0]);
+      champs.forEach(c => {
+        const th = document.createElement("th");
+        th.textContent = c;
+        tableHeader.appendChild(th);
+      });
+
       participants.forEach(eleve => {
         const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${eleve.nom}</td>
-          <td>${eleve.classe}</td>
-          <td>${eleve.sexe}</td>
-          <td>${eleve.distance}</td>
-          <td>${eleve.vitesse}</td>
-          <td>${eleve.vma}</td>
-        `;
+        champs.forEach(c => {
+          const td = document.createElement("td");
+          td.textContent = eleve[c];
+          row.appendChild(td);
+        });
         tableBody.appendChild(row);
       });
     }
@@ -125,7 +139,18 @@
       renderTable();
     }
 
-    // 📤 Importer fichier CSV
+    function triPersonnalise(desc) {
+      const critere = document.getElementById("critereSelect").value;
+      if (!critere) return alert("Choisis un critère valide");
+
+      participants.sort((a, b) => {
+        const valA = isNaN(a[critere]) ? a[critere] : parseFloat(a[critere]);
+        const valB = isNaN(b[critere]) ? b[critere] : parseFloat(b[critere]);
+        return desc ? valB - valA : valA - valB;
+      });
+      renderTable();
+    }
+
     document.getElementById("importCsvInput").addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -133,7 +158,7 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const text = e.target.result;
-        const lignes = text.trim().split("\n").slice(1); // on ignore l’en-tête
+        const lignes = text.trim().split("\n").slice(1);
         let ajoutCount = 0;
 
         lignes.forEach(ligne => {
@@ -166,16 +191,31 @@
         if (ajoutCount > 0) {
           participants.sort((a, b) => a.nom.localeCompare(b.nom));
           localStorage.setItem("eleves", JSON.stringify(participants));
-          alert(`✅ ${ajoutCount} élève(s) importé(s) avec succès.`);
+          alert(`✅ ${ajoutCount} élève(s) importé(s)`);
+          initCritereSelect();
           renderTable();
         } else {
-          alert("⚠️ Aucun élève nouveau trouvé ou fichier invalide.");
+          alert("⚠️ Aucun nouvel élève trouvé ou fichier invalide.");
         }
       };
 
       reader.readAsText(file);
     });
 
+    function initCritereSelect() {
+      const select = document.getElementById("critereSelect");
+      select.innerHTML = '<option value="">Choisir un critère personnalisé</option>';
+      if (participants.length > 0) {
+        Object.keys(participants[0]).forEach(k => {
+          const opt = document.createElement("option");
+          opt.value = k;
+          opt.textContent = k;
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    initCritereSelect();
     renderTable();
   </script>
 </body>
