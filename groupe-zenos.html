@@ -4,74 +4,93 @@
   <meta charset="UTF-8">
   <title>Groupes ZENOS Tour</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="eleve.css">
+  <link rel="stylesheet" href="style.css">
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f5faff;
       padding: 20px;
-      background-color: #f4f9ff;
     }
-    h2 {
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .controls {
+      margin: 20px 0;
       text-align: center;
     }
-    #groupesContainer {
-      margin-top: 20px;
-    }
-    .groupe {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 15px;
-      background-color: #fff;
-    }
-    .btn-container {
-      text-align: center;
-      margin-top: 20px;
-    }
-    button {
-      margin: 10px;
+    .controls button {
+      margin: 5px;
       padding: 10px 20px;
+      border: none;
       background-color: #3498db;
       color: white;
-      border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    button:hover {
+    .controls button:hover {
       background-color: #2980b9;
     }
-    canvas {
-      margin-top: 30px;
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
     }
-    .footer {
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+    footer {
       margin-top: 40px;
       text-align: center;
-      color: #777;
       font-size: 0.9em;
+      color: #777;
+    }
+    canvas {
+      margin: 20px auto;
+      display: block;
     }
   </style>
 </head>
 <body>
+  <h1>Groupes ZENOS Tour</h1>
 
-  <h2>Groupes ZENOS Tour</h2>
+  <div class="controls">
+    <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+    <button onclick="window.print()">🖨️ Imprimer</button>
+    <button id="downloadCSV">📄 Télécharger CSV</button>
+    <button id="btnRadar">📊 Afficher l'équilibre des groupes</button>
+  </div>
 
-  <p style="text-align:center; color: red;">
-    ⚠️ Cette page fonctionne uniquement avec des fichiers générés par l’application <strong>RunStats</strong>.<br>
-    Assurez-vous que chaque élève dispose des données : nom, prénom, classe, sexe, distance, vitesse et VMA.
+  <p style="text-align:center; max-width: 800px; margin: auto;">
+    Cette page permet de générer des <strong>groupes de 4 élèves</strong> équilibrés selon la <strong>VMA</strong> et la <strong>mixité</strong>,
+    uniquement à partir des données <strong>RunStats</strong> (format : nom, prénom, classe, sexe, VMA).
+    Veuillez vous assurer que les élèves ont été importés via un QR code ou un fichier compatible.
   </p>
 
-  <div id="groupesContainer"></div>
-
-  <div class="btn-container">
-    <button onclick="window.print()">🖨️ Imprimer</button>
-    <button onclick="genererRadar()">📊 Afficher l’équilibre des groupes</button>
-    <button onclick="window.location.href='index.html'">🏠 Retour à l’accueil</button>
-  </div>
+  <table id="tableGroupes">
+    <thead>
+      <tr>
+        <th>Groupe</th>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Classe</th>
+        <th>Sexe</th>
+        <th>VMA</th>
+      </tr>
+    </thead>
+    <tbody id="groupesBody"></tbody>
+  </table>
 
   <canvas id="radarChart" width="400" height="400" style="display:none;"></canvas>
 
-  <footer class="footer">
-    Application ScanProf - ZENOS Tour - Lycée Vauban
+  <footer>
+    ScanProf – Réseau ZENOS – Lycée Vauban – JB
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
