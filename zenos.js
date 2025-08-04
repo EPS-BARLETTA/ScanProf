@@ -1,104 +1,107 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const liste = JSON.parse(localStorage.getItem("eleves") || "[]");
-  if (liste.length === 0) {
-    document.getElementById("groupesContainer").innerHTML =
-      "<p style='color:red;'>Aucun élève trouvé. Veuillez scanner un QR code généré par RunStats.</p>";
+  const container = document.getElementById("groupesContainer");
+  const radarCanvas = document.getElementById("radarCanvas");
+  const btnRadar = document.getElementById("btnAfficherRadar");
+
+  const eleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+  if (!eleves.length) {
+    container.innerHTML = "<p>Aucun élève trouvé. Veuillez scanner ou importer un fichier RunStats.</p>";
     return;
   }
 
-  // Tri par VMA décroissante
-  liste.sort((a, b) => b.vma - a.vma);
+  // Fonction de tri mixte et VMA pour groupes hétérogènes
+  function genererGroupesHeterogenes(liste, taille = 4) {
+    const garcons = liste.filter(e => e.sexe.toLowerCase().startsWith("g")).sort((a,b) => b.vma - a.vma);
+    const filles = liste.filter(e => e.sexe.toLowerCase().startsWith("f")).sort((a,b) => b.vma - a.vma);
+    const groupes = [];
 
-  // Séparer filles et garçons
-  const filles = liste.filter(e => e.sexe.toLowerCase() === "f");
-  const garcons = liste.filter(e => e.sexe.toLowerCase() === "g");
+    while (garcons.length || filles.length) {
+      const groupe = [];
+      for (let i = 0; i < taille; i++) {
+        let source = (i % 2 === 0) ? garcons : filles;
+        if (!source.length) source = garcons.length ? garcons : filles;
+        if (source.length) groupe.push(source.shift());
+      }
+      groupes.push(groupe);
+    }
 
-  // Regroupement équilibré
-  const groupes = [];
-  const totalGroupes = Math.ceil(liste.length / 4);
-
-  for (let i = 0; i < totalGroupes; i++) {
-    groupes.push([]);
+    return groupes;
   }
 
-  const repartition = [...filles, ...garcons];
-  let sens = 1;
-  let g = 0;
+  const groupes = genererGroupesHeterogenes(eleves);
 
-  repartition.forEach((eleve, index) => {
-    groupes[g].push(eleve);
-    if (sens === 1 && g >= totalGroupes - 1) sens = -1;
-    else if (sens === -1 && g <= 0) sens = 1;
-    else g += sens;
-  });
+  function afficherGroupes(groupes) {
+    container.innerHTML = groupes.map((groupe, i) => `
+      <h3>Groupe ${i + 1}</h3>
+      <table>
+        <thead>
+          <tr><th>Nom</th><th>Prénom</th><th>Sexe</th><th>Classe</th><th>Distance</th><th>Vitesse</th><th>VMA</th></tr>
+        </thead>
+        <tbody>
+          ${groupe.map(e => `
+            <tr>
+              <td>${e.nom}</td>
+              <td>${e.prenom}</td>
+              <td>${e.sexe}</td>
+              <td>${e.classe}</td>
+              <td>${e.distance || ""}</td>
+              <td>${e.vitesse || ""}</td>
+              <td>${e.vma || ""}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    `).join("");
+  }
 
-  // Affichage
-  const container = document.getElementById("groupesContainer");
-  groupes.forEach((groupe, i) => {
-    const html = groupe
-      .map(e => `${e.prenom} ${e.nom} (${e.sexe.toUpperCase()} - ${e.vma} km/h)`)
-      .join("<br>");
-    const div = document.createElement("div");
-    div.className = "groupe";
-    div.innerHTML = `<h4>Groupe ${i + 1}</h4>${html}`;
-    container.appendChild(div);
-  });
+  afficherGroupes(groupes);
 
-  // Stockage pour radar
-  window.groupesZenos = groupes;
-});
+  btnRadar.addEventListener("click", () => {
+    radarCanvas.style.display = "block";
+    const labels = groupes.map((_, i) => `Groupe ${i + 1}`);
 
-// Radar
-function genererRadar() {
-  const groupes = window.groupesZenos || [];
-  if (groupes.length === 0) return;
+    const vmaMoy = groupes.map(g => moyenne(g.map(e => e.vma)));
+    const vitesseMoy = groupes.map(g => moyenne(g.map(e => e.vitesse)));
+    const distanceMoy = groupes.map(g => moyenne(g.map(e => e.distance)));
+    const mixite = groupes.map(g => {
+      const f = g.filter(e => e.sexe.toLowerCase().startsWith("f")).length;
+      const gCount = g.length;
+      return gCount ? (f / gCount) * 100 : 0;
+    });
 
-  const labels = groupes.map((_, i) => `Groupe ${i + 1}`);
-  const moyVMA = groupes.map(g => moyenne(g.map(e => e.vma)));
-  const moyDistance = groupes.map(g => moyenne(g.map(e => e.distance || 0)));
-  const mixite = groupes.map(g => calculMixite(g));
-
-  const ctx = document.getElementById("radarChart").getContext("2d");
-  document.getElementById("radarChart").style.display = "block";
-
-  new Chart(ctx, {
-    type: "radar",
-    data: {
-      labels: ["VMA", "Distance", "Mixité"],
-      datasets: labels.map((g, i) => ({
-        label: g,
-        data: [moyVMA[i], moyDistance[i], mixite[i] * 100],
-        fill: true
-      }))
-    },
-    options: {
-      responsive: true,
-      scales: {
-        r: {
-          angleLines: { display: true },
-          suggestedMin: 0,
-          suggestedMax: 100
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: "VMA moyenne",
+          data: vmaMoy,
+        },
+        {
+          label: "Vitesse moyenne",
+          data: vitesseMoy,
+        },
+        {
+          label: "Distance moyenne",
+          data: distanceMoy,
+        },
+        {
+          label: "Mixité (%)",
+          data: mixite,
         }
-      },
-      plugins: {
-        title: {
-          display: true,
-          text: "Équilibre des groupes (en % pour mixité)"
-        }
+      ]
+    };
+
+    new Chart(radarCanvas, {
+      type: "radar",
+      data,
+      options: {
+        elements: { line: { borderWidth: 3 } },
+        scales: { r: { min: 0, suggestedMax: 100 } }
       }
-    }
+    });
   });
-}
 
-function moyenne(arr) {
-  if (!arr.length) return 0;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function calculMixite(groupe) {
-  const f = groupe.filter(e => e.sexe.toLowerCase() === "f").length;
-  const g = groupe.filter(e => e.sexe.toLowerCase() === "g").length;
-  const total = f + g;
-  if (total === 0) return 0;
-  return 1 - Math.abs(f - g) / total; // 1 = parfait équilibre
-}
+  function moyenne(tab) {
+    const nums = tab.filter(x => typeof x === "number" && !isNaN(x));
+    return nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1) : 0;
+  }
+});
