@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Aide ScanProf</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial; padding: 20px; background-color: #f9fcff; }
+    h1 { text-align: center; }
+    section { margin-bottom: 30px; }
+    h2 { color: #2c3e50; }
+    ul { line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <h1>Aide - Application ScanProf</h1>
+
+  <section>
+    <h2>📸 Accueil (index.html)</h2>
+    <ul>
+      <li>Permet d’importer un fichier CSV ou de scanner un QR code compatible RunStats</li>
+      <li>Les données sont stockées automatiquement dans le navigateur</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>📋 Tri des participants (tri.html)</h2>
+    <ul>
+      <li>Affiche les colonnes automatiquement selon les données importées</li>
+      <li>Cliquez sur un en-tête pour trier dynamiquement la colonne</li>
+      <li>Boutons : retour, imprimer, exporter CSV, accès Groupe ZENOS</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>🧬 Groupe ZENOS Tour (groupe-zenos.html)</h2>
+    <ul>
+      <li>Génère des groupes mixtes et équilibrés pour l’événement ZENOS Tour</li>
+      <li>Tri basé sur VMA et sexe uniquement</li>
+      <li>Compatible uniquement avec des données issues de RunStats</li>
+      <li>Exportation CSV + impression disponibles</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>📦 Résumé (resume.html)</h2>
+    <ul>
+      <li>Montre les résultats de 2 élèves avec un QR code généré</li>
+      <li>QR code scannable par ScanProf pour ajouter les élèves au tri</li>
+      <li>Permet téléchargement du QR code et d’un fichier CSV</li>
+    </ul>
+  </section>
+
+  <footer style="margin-top: 40px; text-align:center;">
+    ScanProf – Réseau ZENOS – Lycée Vauban – JB
+  </footer>
+</body>
+</html>
