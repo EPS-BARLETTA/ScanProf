@@ -1,110 +1,80 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Groupes ZENOS Tour – ScanProf</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <title>Groupes ZENOS Tour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="eleve.css">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fafafa;
       padding: 20px;
+      background-color: #f4f9ff;
     }
-
-    h1, h2 {
+    h2 {
       text-align: center;
-      color: #2c3e50;
     }
-
-    #info-warning {
-      background-color: #f8d7da;
-      color: #721c24;
+    #groupesContainer {
+      margin-top: 20px;
+    }
+    .groupe {
+      border: 1px solid #ccc;
+      border-radius: 8px;
       padding: 10px;
-      border: 1px solid #f5c6cb;
-      border-radius: 5px;
+      margin-bottom: 15px;
+      background-color: #fff;
+    }
+    .btn-container {
       text-align: center;
-      margin-bottom: 20px;
+      margin-top: 20px;
     }
-
-    .actions {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .actions button {
-      padding: 10px 15px;
-      border: none;
+    button {
+      margin: 10px;
+      padding: 10px 20px;
       background-color: #3498db;
       color: white;
+      border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-
-    .actions button:hover {
+    button:hover {
       background-color: #2980b9;
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+    canvas {
+      margin-top: 30px;
     }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: center;
-    }
-
-    th {
-      background-color: #3498db;
-      color: white;
-    }
-
-    #chartContainer {
-      max-width: 800px;
-      margin: 40px auto;
-      display: none;
-    }
-
-    footer {
-      text-align: center;
+    .footer {
       margin-top: 40px;
-      color: #666;
-      font-size: 0.9rem;
+      text-align: center;
+      color: #777;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
-  <h1>Groupes ZENOS Tour</h1>
 
-  <div id="info-warning">
-    ⚠️ Cette page est uniquement compatible avec des fichiers générés via <strong>RunStats</strong>.<br/>
-    Elle nécessite impérativement les colonnes : Nom, Prénom, Classe, Sexe, VMA.
-  </div>
+  <h2>Groupes ZENOS Tour</h2>
 
-  <div class="actions">
-    <button onclick="location.href='index.html'">Retour à l'accueil</button>
-    <button onclick="window.print()">Imprimer</button>
-    <button onclick="genererGroupes()">Générer les groupes</button>
-    <button onclick="afficherGraphique()">Afficher l'équilibre des groupes</button>
-  </div>
+  <p style="text-align:center; color: red;">
+    ⚠️ Cette page fonctionne uniquement avec des fichiers générés par l’application <strong>RunStats</strong>.<br>
+    Assurez-vous que chaque élève dispose des données : nom, prénom, classe, sexe, distance, vitesse et VMA.
+  </p>
 
   <div id="groupesContainer"></div>
 
-  <div id="chartContainer">
-    <canvas id="radarChart"></canvas>
+  <div class="btn-container">
+    <button onclick="window.print()">🖨️ Imprimer</button>
+    <button onclick="genererRadar()">📊 Afficher l’équilibre des groupes</button>
+    <button onclick="window.location.href='index.html'">🏠 Retour à l’accueil</button>
   </div>
 
-  <footer>
-    ScanProf – Équipe EPS Lycée Vauban – LUXEMBOURG – JB
+  <canvas id="radarChart" width="400" height="400" style="display:none;"></canvas>
+
+  <footer class="footer">
+    Application ScanProf - ZENOS Tour - Lycée Vauban
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="zenos.js"></script>
 </body>
 </html>
