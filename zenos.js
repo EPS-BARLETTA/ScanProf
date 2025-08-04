@@ -1,88 +1,50 @@
-const groupes = [];
-const tableauEleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+document.addEventListener("DOMContentLoaded", () => {
+  const groupesContainer = document.getElementById("groupesContainer");
+  const liste = JSON.parse(localStorage.getItem("eleves") || "[]");
 
-function genererGroupes() {
-  const classes = {};
+  if (!liste.length) {
+    groupesContainer.innerHTML = "<p>Aucun élève trouvé. Veuillez scanner des QR codes ou importer un fichier CSV via RunStats.</p>";
+    return;
+  }
 
-  // Regroupe les élèves par classe
-  tableauEleves.forEach(eleve => {
-    if (eleve.vma && !isNaN(parseFloat(eleve.vma))) {
-      const classe = eleve.classe || "Inconnue";
-      if (!classes[classe]) classes[classe] = [];
-      classes[classe].push({ ...eleve, vma: parseFloat(eleve.vma) });
-    }
-  });
+  // Sélectionner uniquement les champs nécessaires
+  const donneesValides = liste.filter(e =>
+    e.nom && e.prenom && e.classe && e.sexe && !isNaN(e.vma)
+  );
 
-  Object.entries(classes).forEach(([classe, eleves]) => {
-    // Trie les élèves par VMA décroissante
-    eleves.sort((a, b) => b.vma - a.vma);
+  // Tri par VMA décroissante
+  donneesValides.sort((a, b) => b.vma - a.vma);
 
-    // Découpe en groupes hétérogènes : 1 fort, 2 moyens, 1 faible
-    while (eleves.length >= 4) {
-      const fort = eleves.shift(); // premier (VMA haute)
-      const faible = eleves.pop(); // dernier (VMA faible)
-      const moyen1 = eleves.shift(); // suivant (moyenne haute)
-      const moyen2 = eleves.pop();   // suivant (moyenne basse)
+  // Séparer les filles et les garçons
+  const filles = donneesValides.filter(e => e.sexe.toLowerCase().startsWith("f"));
+  const garcons = donneesValides.filter(e => e.sexe.toLowerCase().startsWith("g"));
 
-      const groupe = [fort, moyen1, moyen2, faible];
-      groupes.push({ classe, membres: groupe });
-    }
-  });
+  const groupes = [];
+  const tailleGroupe = 4;
 
-  afficherGroupes();
-}
+  while (filles.length || garcons.length) {
+    const groupe = [];
 
-function afficherGroupes() {
-  const container = document.getElementById("groupes");
-  container.innerHTML = "";
+    // Mélange un peu les genres mais garde une certaine alternance
+    if (filles.length > 0) groupe.push(filles.shift());
+    if (garcons.length > 0) groupe.push(garcons.shift());
+    if (filles.length > 0) groupe.push(filles.pop());
+    if (garcons.length > 0) groupe.push(garcons.pop());
+
+    groupes.push(groupe.filter(Boolean)); // retirer les undefined si effectif impair
+  }
 
   groupes.forEach((groupe, index) => {
     const div = document.createElement("div");
     div.className = "group";
-
-    const titre = document.createElement("h3");
-    titre.textContent = `Groupe ${index + 1} – Classe ${groupe.classe}`;
-    div.appendChild(titre);
-
-    const ul = document.createElement("ul");
-    groupe.membres.forEach(eleve => {
-      const li = document.createElement("li");
-      li.textContent = `${eleve.prenom} ${eleve.nom} (${eleve.vma})`;
-      ul.appendChild(li);
-    });
-
-    div.appendChild(ul);
-    container.appendChild(div);
+    div.innerHTML = `
+      <h3>Groupe ${index + 1}</h3>
+      <ul>
+        ${groupe.map(e => `
+          <li>${e.prenom} ${e.nom} – ${e.classe} – ${e.sexe} – VMA : ${e.vma} km/h</li>
+        `).join("")}
+      </ul>
+    `;
+    groupesContainer.appendChild(div);
   });
-}
-
-function exporterCSV() {
-  if (groupes.length === 0) return;
-
-  const lignes = [["Classe", "Groupe", "Nom", "Prénom", "VMA"]];
-
-  groupes.forEach((groupe, i) => {
-    groupe.membres.forEach(eleve => {
-      lignes.push([
-        groupe.classe,
-        `Groupe ${i + 1}`,
-        eleve.nom,
-        eleve.prenom,
-        eleve.vma
-      ]);
-    });
-  });
-
-  const csvContent = lignes.map(ligne => ligne.map(val => `"${val}"`).join(",")).join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const lien = document.createElement("a");
-  lien.setAttribute("href", url);
-  lien.setAttribute("download", "groupes_zenos.csv");
-  document.body.appendChild(lien);
-  lien.click();
-  document.body.removeChild(lien);
-}
-
-genererGroupes();
+});
