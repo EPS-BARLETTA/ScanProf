@@ -17,22 +17,15 @@
       color: #2c3e50;
     }
 
-    .top-buttons {
+    .filters {
       display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .filters, .actions {
-      display: flex;
-      gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin: 20px 0;
     }
 
-    button {
+    .filters button {
       padding: 10px 15px;
       border: none;
       background-color: #3498db;
@@ -41,18 +34,19 @@
       cursor: pointer;
     }
 
-    button:hover {
+    .filters button:hover {
       background-color: #2980b9;
     }
 
-    input[type="file"] {
-      margin-bottom: 10px;
+    .file-section {
+      margin: 15px 0;
+      text-align: center;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 20px;
     }
 
     th, td {
@@ -66,53 +60,43 @@
       color: white;
     }
 
-    footer {
+    .footer {
       text-align: center;
       margin-top: 40px;
-      color: #666;
+      color: #777;
       font-size: 0.9rem;
+    }
+
+    .actions {
+      text-align: center;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <h1>Tri des participants – ScanProf</h1>
 
-  <div class="top-buttons">
-    <button onclick="window.location.href='index.html'">⬅️ Retour à l’accueil</button>
+  <div class="file-section">
+    <label for="importCsvInput"><strong>Importer un fichier CSV :</strong></label>
     <input type="file" id="importCsvInput" accept=".csv" />
   </div>
 
-  <div class="filters">
-    <button onclick="sortBy('nom')">Nom A-Z</button>
-    <button onclick="sortBy('vitesse')">Vitesse ↑</button>
-    <button onclick="sortBy('vitesse', true)">Vitesse ↓</button>
-    <button onclick="sortBy('vma')">VMA ↑</button>
-    <button onclick="sortBy('vma', true)">VMA ↓</button>
-    <button onclick="sortBy('distance')">Distance ↑</button>
-    <button onclick="sortBy('distance', true)">Distance ↓</button>
-  </div>
+  <div class="filters" id="sortButtons"></div>
 
   <div class="actions">
+    <button onclick="window.location.href='index.html'">🏠 Retour à l’accueil</button>
     <button onclick="window.location.href='groupe-zenos.html'">👥 Groupe ZENOS Tour</button>
-    <button onclick="printTable()">🖨️ Imprimer le tableau</button>
+    <button onclick="window.print()">🖨️ Imprimer</button>
   </div>
 
   <table id="participantsTable">
     <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Prénom</th>
-        <th>Classe</th>
-        <th>Sexe</th>
-        <th>Distance</th>
-        <th>Vitesse</th>
-        <th>VMA</th>
-      </tr>
+      <tr id="tableHeader"></tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <footer>
+  <footer class="footer">
     ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
