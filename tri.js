@@ -6,24 +6,92 @@ function goZenos() {
   window.location.href = "groupe-zenos.html";
 }
 
-function resetStorage() {
-  if (confirm("Voulez-vous vraiment réinitialiser les données ?")) {
+function getData() {
+  return JSON.parse(localStorage.getItem("eleves")) || [];
+}
+
+function saveData(data) {
+  localStorage.setItem("eleves", JSON.stringify(data));
+}
+
+function buildTable(data) {
+  const tableHead = document.getElementById("tableHead");
+  const tbody = document.getElementById("elevesTableBody");
+  tbody.innerHTML = "";
+  tableHead.innerHTML = "";
+
+  if (data.length === 0) return;
+
+  const keys = Object.keys(data[0]);
+
+  // Créer l'en-tête du tableau
+  const headRow = document.createElement("tr");
+  keys.forEach(key => {
+    const th = document.createElement("th");
+    th.textContent = key;
+    headRow.appendChild(th);
+  });
+  tableHead.appendChild(headRow);
+
+  // Créer les lignes du tableau
+  data.forEach(eleve => {
+    const tr = document.createElement("tr");
+    keys.forEach(key => {
+      const td = document.createElement("td");
+      td.textContent = eleve[key] || "";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Remplir le menu déroulant avec les colonnes
+  const sortSelect = document.getElementById("sortKey");
+  sortSelect.innerHTML = "";
+  keys.forEach(k => {
+    const option = document.createElement("option");
+    option.value = k;
+    option.textContent = "Trier par " + k;
+    sortSelect.appendChild(option);
+  });
+}
+
+function sortTable() {
+  const key = document.getElementById("sortKey").value;
+  const data = getData();
+  data.sort((a, b) => (a[key] || "").toString().localeCompare((b[key] || "").toString()));
+  saveData(data);
+  buildTable(data);
+}
+
+function resetData() {
+  if (confirm("Confirmer la suppression de tous les participants ?")) {
     localStorage.removeItem("eleves");
-    location.reload();
+    buildTable([]);
   }
 }
 
-function exportCSV() {
-  const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
-  if (eleves.length === 0) return alert("Aucune donnée à exporter.");
-
-  const headers = Object.keys(eleves[0]);
-  const rows = eleves.map(eleve =>
-    headers.map(h => `"${(eleve[h] || "").toString().replace(/"/g, '""')}"`).join(",")
+function searchTable() {
+  const searchValue = document.getElementById("searchInput").value.toLowerCase();
+  const data = getData();
+  const filtered = data.filter(eleve =>
+    Object.values(eleve).some(val =>
+      (val || "").toString().toLowerCase().includes(searchValue)
+    )
   );
+  buildTable(filtered);
+}
 
-  const csvContent = [headers.join(","), ...rows].join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+function exportCSV() {
+  const data = getData();
+  if (data.length === 0) return;
+
+  const keys = Object.keys(data[0]);
+  const csv = [
+    keys.join(","),
+    ...data.map(row => keys.map(k => `"${row[k] || ""}"`).join(","))
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
@@ -38,88 +106,21 @@ function importCSV(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = function (e) {
-    const text = e.target.result;
-    const [headerLine, ...lines] = text.trim().split("\n");
-    const headers = headerLine.split(",");
-
-    const data = lines.map(line => {
-      const values = line.split(",");
+  reader.onload = function(e) {
+    const lines = e.target.result.split("\n").filter(Boolean);
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+    const data = lines.slice(1).map(line => {
+      const values = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
       const obj = {};
-      headers.forEach((h, i) => {
-        obj[h.trim()] = values[i] ? values[i].trim().replace(/^"|"$/g, "") : "";
-      });
+      headers.forEach((h, i) => obj[h] = values[i] || "");
       return obj;
     });
-
-    localStorage.setItem("eleves", JSON.stringify(data));
-    location.reload();
+    saveData(data);
+    buildTable(data);
   };
   reader.readAsText(file);
 }
 
-function applySort() {
-  const key = document.getElementById("sortSelect").value;
-  const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
-  eleves.sort((a, b) => (a[key] || "").localeCompare(b[key] || ""));
-  localStorage.setItem("eleves", JSON.stringify(eleves));
-  displayTable(eleves);
-}
-
-function applySearch() {
-  const searchValue = document.getElementById("searchInput").value.toLowerCase();
-  const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
-  const filtered = eleves.filter(eleve =>
-    Object.values(eleve).some(v =>
-      (v || "").toString().toLowerCase().includes(searchValue)
-    )
-  );
-  displayTable(filtered);
-}
-
-function displayTable(data) {
-  const tableHead = document.getElementById("tableHead");
-  const tableBody = document.getElementById("elevesTableBody");
-  tableHead.innerHTML = "";
-  tableBody.innerHTML = "";
-
-  if (data.length === 0) return;
-
-  const headers = Object.keys(data[0]);
-
-  const headRow = document.createElement("tr");
-  headers.forEach(header => {
-    const th = document.createElement("th");
-    th.textContent = header;
-    headRow.appendChild(th);
-  });
-  tableHead.appendChild(headRow);
-
-  data.forEach(eleve => {
-    const row = document.createElement("tr");
-    headers.forEach(header => {
-      const td = document.createElement("td");
-      td.textContent = eleve[header] || "";
-      row.appendChild(td);
-    });
-    tableBody.appendChild(row);
-  });
-
-  populateSortOptions(headers);
-}
-
-function populateSortOptions(headers) {
-  const select = document.getElementById("sortSelect");
-  select.innerHTML = "";
-  headers.forEach(header => {
-    const option = document.createElement("option");
-    option.value = header;
-    option.textContent = header;
-    select.appendChild(option);
-  });
-}
-
-window.onload = function () {
-  const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
-  displayTable(eleves);
+window.onload = function() {
+  buildTable(getData());
 };
