@@ -18,39 +18,33 @@
     }
 
     .controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
+      text-align: center;
       margin: 20px 0;
     }
 
-    .controls button, .controls select, .controls input[type="text"] {
+    .controls button,
+    .controls select,
+    .controls input[type="file"] {
+      margin: 5px;
       padding: 10px 20px;
-      font-size: 16px;
+      font-size: 15px;
       border: none;
       border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .controls button {
       background-color: #3498db;
       color: white;
+      cursor: pointer;
     }
 
     .controls button:hover {
       background-color: #2980b9;
     }
 
-    #triSelect {
-      background-color: #2ecc71;
-      color: white;
-    }
-
-    #searchInput {
-      background-color: white;
-      border: 1px solid #ccc;
+    .controls input[type="text"] {
+      padding: 10px;
       width: 200px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
     table {
@@ -83,19 +77,20 @@
 
   <div class="controls">
     <button onclick="goHome()">🏠 Retour à l'accueil</button>
-    <select id="triSelect">
-      <option value="">-- Tri par... --</option>
-    </select>
-    <button onclick="trierDonnees()">Trier</button>
-    <input type="text" id="searchInput" placeholder="🔍 Rechercher un mot-clé..." onkeyup="filtrerTableau()">
+    <button onclick="resetStorage()">🔄 Réinitialiser</button>
     <button onclick="goZenos()">🧬 Groupe ZENOS Tour</button>
-    <button onclick="window.print()">🖶 Imprimer</button>
     <button onclick="exportCSV()">⬇️ Exporter CSV</button>
-    <button onclick="window.location.href='aide.html'" style="background-color:#34495e;">❓ Aide</button>
+    <button onclick="window.print()">🖶 Imprimer</button>
+    <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)">
+    <select id="sortSelect"></select>
+    <button onclick="applySort()">⚙️ Trier</button>
+    <input type="text" id="searchInput" placeholder="Recherche...">
+    <button onclick="applySearch()">🔍 Rechercher</button>
+    <button onclick="window.location.href='aide.html'">❓ Aide</button>
   </div>
 
   <table>
-    <thead id="elevesTableHead"></thead>
+    <thead id="tableHead"></thead>
     <tbody id="elevesTableBody"></tbody>
   </table>
 
