@@ -3,82 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scan QR - ScanProf</title>
+  <title>ScanProf - Scanner</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <script src="scan.js" defer></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #eef7ff;
-      padding: 20px;
+      background-color: #f0f6ff;
       text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #2c3e50;
     }
 
     #reader {
       width: 320px;
-      height: 320px;
       margin: 20px auto;
       border: 2px solid #3498db;
       border-radius: 8px;
     }
 
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #2980b9;
+    footer {
+      margin-top: 30px;
+      font-size: 0.8em;
+      color: #777;
     }
   </style>
 </head>
 <body>
-  <h1>📷 Scanner un QR Code</h1>
+  <h1>📷 Scanner des QR Codes</h1>
+  <p>Autorisez l'accès à la caméra si demandé. Si rien ne s'affiche, vérifiez vos réglages dans Safari.</p>
+
   <div id="reader"></div>
 
-  <script>
-    const html5QrCode = new Html5Qrcode("reader");
-
-    Html5Qrcode.getCameras().then(devices => {
-      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-      if (!backCam) {
-        alert("Aucune caméra disponible.");
-        return;
-      }
-
-      html5QrCode.start(
-        { deviceId: { exact: backCam.id } },
-        { fps: 10, qrbox: 250 },
-        decodedText => {
-          try {
-            const eleve = JSON.parse(decodedText);
-            const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
-            const existe = eleves.some(e => e.Nom === eleve.Nom && e.Prénom === eleve.Prénom);
-
-            if (!existe) {
-              eleves.push(eleve);
-              localStorage.setItem("eleves", JSON.stringify(eleves));
-              alert(`✅ Élève ajouté : ${eleve.Prénom} ${eleve.Nom}`);
-            } else {
-              alert(`⚠️ Élève déjà scanné : ${eleve.Prénom} ${eleve.Nom}`);
-            }
-
-            html5QrCode.stop().then(() => {
-              window.location.href = "tri.html";
-            });
-
-          } catch (err) {
-            alert("❌ QR code invalide.");
-          }
-        }
-      ).catch(err => {
-        alert("Erreur ouverture caméra : " + err);
-      });
-    });
-  </script>
+  <footer>
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
+  </footer>
 </body>
 </html>
