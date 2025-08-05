@@ -24,6 +24,7 @@
       margin: 20px auto;
       border: 2px solid #3498db;
       border-radius: 8px;
+      display: none;
     }
 
     button {
@@ -51,8 +52,7 @@
 <body>
   <h1>📷 ScanProf - Bienvenue</h1>
 
-  <p><em>Autorisez l'accès à la caméra si demandé. Si rien ne s'affiche, vérifiez vos réglages dans Safari.</em></p>
-
+  <button onclick="startScanner()">📷 Scanner des QR Codes</button>
   <div id="reader"></div>
 
   <button onclick="window.location.href='tri.html'">👀 Voir les participants</button>
@@ -64,6 +64,27 @@
 
   <script>
     const html5QrCode = new Html5Qrcode("reader");
+
+    function startScanner() {
+      const readerDiv = document.getElementById("reader");
+      readerDiv.style.display = "block";
+
+      Html5Qrcode.getCameras().then(devices => {
+        const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+        if (!backCam) {
+          alert("Aucune caméra disponible.");
+          return;
+        }
+
+        html5QrCode.start(
+          { deviceId: { exact: backCam.id } },
+          { fps: 10, qrbox: 250 },
+          onScanSuccess
+        ).catch(err => {
+          alert("Erreur lors de l'ouverture de la caméra.");
+        });
+      });
+    }
 
     function onScanSuccess(decodedText) {
       try {
@@ -87,22 +108,6 @@
         alert("❌ QR code invalide.");
       }
     }
-
-    Html5Qrcode.getCameras().then(devices => {
-      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-      if (!backCam) {
-        alert("Aucune caméra disponible.");
-        return;
-      }
-
-      html5QrCode.start(
-        { deviceId: { exact: backCam.id } },
-        { fps: 10, qrbox: 250 },
-        onScanSuccess
-      ).catch(err => {
-        alert("Erreur lors de l'ouverture de la caméra.");
-      });
-    });
   </script>
 </body>
 </html>
