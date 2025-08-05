@@ -35,8 +35,12 @@
     }
     Html5Qrcode.getCameras().then(devices => {
       const back = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+      if (!back) {
+        alert("Aucune caméra disponible.");
+        return;
+      }
       html5QrCode.start({ deviceId: { exact: back.id } }, { fps: 10, qrbox: 250 }, onScanSuccess)
-        .catch(err => alert("Erreur d'accès à la caméra."));
+        .catch(err => alert("Erreur d'accès à la caméra : " + err));
     });
   </script>
 </body>
