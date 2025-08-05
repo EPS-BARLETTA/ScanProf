@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aide - ScanProf</title>
-  <link rel="stylesheet" href="style.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+      background-color: #eef7ff;
       padding: 20px;
-      line-height: 1.6;
+      max-width: 900px;
+      margin: auto;
     }
 
     h1 {
@@ -20,77 +20,102 @@
 
     h2 {
       color: #34495e;
+      margin-top: 30px;
+    }
+
+    p, li {
+      font-size: 16px;
+      line-height: 1.6;
     }
 
     ul {
       margin-left: 20px;
     }
 
-    button {
+    .button {
       display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
+      margin: 30px auto;
+      padding: 12px 24px;
       background-color: #3498db;
       color: white;
       border: none;
       border-radius: 5px;
       font-size: 16px;
       cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    footer {
-      margin-top: 30px;
       text-align: center;
-      font-size: 0.8em;
-      color: #777;
+      width: fit-content;
+    }
+
+    .button:hover {
+      background-color: #2980b9;
     }
   </style>
 </head>
 <body>
-  <h1>📘 Aide - ScanProf</h1>
 
-  <h2>1. Accueil</h2>
+  <h1>❓ Aide - Application ScanProf</h1>
+
+  <p><strong>ScanProf</strong> est une application pensée pour les professeurs d'EPS afin de collecter, trier, organiser et exploiter les données scannées ou importées depuis d'autres applications (comme RunStats).</p>
+
+  <h2>📷 Page d'accueil (Scan)</h2>
   <ul>
-    <li>Scanner un QR code élève (depuis RunStats ou autre).</li>
-    <li>Chaque élève est automatiquement ajouté au stockage local.</li>
-    <li>Un message vert confirme l’ajout (ou orange si déjà scanné).</li>
-    <li>Vous pouvez ensuite cliquer sur “Voir les participants”.</li>
+    <li>Utilisez le <strong>scanner QR Code</strong> pour enregistrer les élèves. Il ouvre automatiquement la caméra arrière (si disponible).</li>
+    <li>Les élèves sont automatiquement enregistrés (si non déjà présents) et redirigés vers la page des participants.</li>
+    <li>Vous pouvez également <strong>importer un fichier CSV</strong> contenant des élèves déjà scannés ou issus d’une précédente séance.</li>
   </ul>
 
-  <h2>2. Page “Participants enregistrés”</h2>
+  <h2>👥 Participants enregistrés</h2>
   <ul>
-    <li>Liste de tous les élèves scannés ou importés.</li>
-    <li>Tri dynamique possible selon n’importe quelle colonne (Nom, Classe, Sexe, VMA, Distance...)</li>
-    <li>Recherche texte : tapez “Lola” ou “5A” pour filtrer la liste.</li>
-    <li>Exporter CSV : crée un fichier avec tous les élèves.</li>
-    <li>Importer CSV : recharge une ancienne liste (scannée auparavant ou enregistrée dans Fichiers iPad).</li>
-    <li>Réinitialiser : efface tous les élèves stockés.</li>
-    <li>“Groupe ZENOS Tour” : envoie vers la page de création de groupes.</li>
+    <li>Liste des élèves enregistrés (après scan ou import CSV).</li>
+    <li>Vous pouvez trier dynamiquement selon n’importe quelle colonne du tableau (ex : Nom, Classe, VMA, Distance...)</li>
+    <li>Recherche rapide par nom, prénom ou classe (ex : taper "5A" ou "Lola").</li>
+    <li>Boutons disponibles :
+      <ul>
+        <li>🏠 Retour à l'accueil</li>
+        <li>⚙️ Tri dynamique (choix d'une colonne)</li>
+        <li>🔍 Recherche texte</li>
+        <li>⬇️ Exporter CSV (sauvegarde localement le fichier, ex. dans Fichiers sur iPad)</li>
+        <li>📥 Importer un fichier CSV</li>
+        <li>🧬 Groupe ZENOS Tour (redirige vers la page des groupes)</li>
+        <li>🧼 Réinitialiser (efface toutes les données)</li>
+      </ul>
+    </li>
   </ul>
 
-  <h2>3. Page “Groupes ZENOS Tour”</h2>
+  <h2>🧬 Groupes ZENOS Tour</h2>
   <ul>
-    <li>Crée des groupes mixtes de 4 élèves selon la VMA.</li>
-    <li>Chaque groupe : 1 VMA haute, 1 basse, 2 moyennes, mixité assurée.</li>
-    <li>Seuls les groupes complets sont affichés.</li>
-    <li>Possibilité d’imprimer ou de générer un PDF avec tous les groupes.</li>
+    <li>Fonction dédiée à l’événement ZENOS Tour</li>
+    <li>Forme des groupes de <strong>4 élèves mixtes</strong> :
+      <ul>
+        <li>1 VMA haute</li>
+        <li>1 VMA basse</li>
+        <li>2 VMA moyennes</li>
+      </ul>
+    </li>
+    <li>Les élèves restants (non groupables par 4) ne sont pas affichés</li>
+    <li>Boutons disponibles :
+      <ul>
+        <li>🏠 Accueil</li>
+        <li>🖶 Imprimer</li>
+        <li>📄 Générer PDF (tous les groupes sur une seule page)</li>
+        <li>❓ Aide</li>
+      </ul>
+    </li>
   </ul>
 
-  <h2>4. Fonctionnement sur iPad</h2>
+  <h2>📁 Fichiers CSV</h2>
   <ul>
-    <li>Compatible avec Safari (et Chrome si autorisé à accéder à la caméra).</li>
-    <li>Le bouton “Exporter CSV” permet d’enregistrer les données dans “Fichiers”.</li>
-    <li>Pour importer un fichier : ouvrez à nouveau la page “Participants”, cliquez sur “Importer” et sélectionnez un fichier CSV déjà existant.</li>
+    <li>L’export CSV permet de sauvegarder les données dans l’iPad (via “Fichiers”).</li>
+    <li>L’import CSV permet de réutiliser un fichier déjà enregistré (utile pour poursuivre une séance ou créer de nouveaux groupes).</li>
   </ul>
 
-  <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+  <h2>🔒 Données</h2>
+  <ul>
+    <li>Les données sont stockées temporairement dans le navigateur (localStorage).</li>
+    <li>Une réinitialisation efface tout (pensez à exporter avant).</li>
+  </ul>
 
-  <footer>
-    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
-  </footer>
+  <button class="button" onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+
 </body>
 </html>
