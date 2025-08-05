@@ -20,7 +20,10 @@
 
     #reader {
       width: 300px;
+      height: 300px;
       margin: 20px auto;
+      border: 2px solid #3498db;
+      border-radius: 8px;
     }
 
     button {
@@ -58,16 +61,14 @@
   </footer>
 
   <script>
-    const scanner = new Html5QrcodeScanner("reader", {
-      fps: 10,
-      qrbox: 250
-    });
+    const html5QrCode = new Html5Qrcode("reader");
 
-    scanner.render((decodedText, decodedResult) => {
+    function onScanSuccess(decodedText) {
       try {
         const eleve = JSON.parse(decodedText);
         const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
         const existe = eleves.some(e => e.Nom === eleve.Nom && e.Prénom === eleve.Prénom);
+
         if (!existe) {
           eleves.push(eleve);
           localStorage.setItem("eleves", JSON.stringify(eleves));
@@ -75,10 +76,24 @@
         } else {
           alert(`⚠️ Élève déjà scanné : ${eleve.Prénom} ${eleve.Nom}`);
         }
-        // Redirection automatique après scan
-        window.location.href = "tri.html";
-      } catch (e) {
+
+        html5QrCode.stop().then(() => {
+          window.location.href = "tri.html";
+        });
+
+      } catch (err) {
         alert("❌ QR code invalide.");
+      }
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+        html5QrCode.start(
+          { deviceId: { exact: backCam.id } },
+          { fps: 10, qrbox: 250 },
+          onScanSuccess
+        );
       }
     });
   </script>
