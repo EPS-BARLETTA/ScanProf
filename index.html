@@ -3,103 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ScanProf - Bienvenue</title>
+  <title>ScanProf - Accueil</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #e8f4fd;
+      background-color: #e8f0ff;
       padding: 20px;
       text-align: center;
     }
 
     h1 {
       color: #2c3e50;
-      margin-bottom: 30px;
-    }
-
-    .buttons {
-      margin-bottom: 30px;
-    }
-
-    .buttons button {
-      margin: 10px;
-      padding: 15px 25px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      background-color: #3498db;
-      color: white;
-      cursor: pointer;
-    }
-
-    .buttons button:hover {
-      background-color: #2980b9;
     }
 
     #reader {
       width: 300px;
-      margin: 0 auto;
-      padding: 10px;
-      border: 2px solid #ccc;
+      margin: 20px auto;
+      border: 2px solid #2c3e50;
       border-radius: 10px;
-      background-color: white;
+      padding: 10px;
+      background: white;
     }
 
-    .success-message {
-      color: green;
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #status {
       margin-top: 15px;
+      font-weight: bold;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.8em;
+      color: #666;
     }
   </style>
 </head>
 <body>
   <h1>Bienvenue sur ScanProf</h1>
 
-  <div class="buttons">
-    <button onclick="startScan()">📷 Scanner des QR Codes</button>
-    <button onclick="window.location.href='tri.html'">📂 Voir les participants</button>
-    <button onclick="window.location.href='tri.html?import=1'">📁 Importer un fichier CSV</button>
-    <button onclick="window.location.href='aide.html'">❓ Aide</button>
-  </div>
-
   <div id="reader"></div>
-  <div class="success-message" id="successMessage"></div>
+  <div id="status"></div>
 
-  <script src="scanner.min.js"></script>
+  <button onclick="window.location.href='tri.html'">📋 Voir les participants</button>
+  <button onclick="window.location.href='aide.html'">❓ Aide</button>
+
+  <footer>
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
+  </footer>
+
   <script>
-    let scannerInstance;
+    const qrRegion = document.getElementById("reader");
+    const status = document.getElementById("status");
 
-    function startScan() {
-      if (scannerInstance) return;
+    function onScanSuccess(decodedText) {
+      try {
+        const data = JSON.parse(decodedText);
+        const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
 
-      scannerInstance = new Html5Qrcode("reader");
-      scannerInstance.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: 250
-        },
-        (decodedText) => {
-          try {
-            const data = JSON.parse(decodedText);
-            const existing = JSON.parse(localStorage.getItem("eleves")) || [];
-            existing.push(data);
-            localStorage.setItem("eleves", JSON.stringify(existing));
-
-            document.getElementById("successMessage").innerText = 
-              `✅ Élève ajouté : ${data.Prénom} ${data.Nom}`;
-          } catch (e) {
-            document.getElementById("successMessage").innerText =
-              "❌ Format QR invalide";
-          }
-        },
-        (errorMessage) => {
-          // silencieux
+        // Évite les doublons exacts (Nom + Prénom)
+        const exists = eleves.some(e => e.Nom === data.Nom && e.Prénom === data.Prénom);
+        if (!exists) {
+          eleves.push(data);
+          eleves.sort((a, b) => (a.Nom || "").localeCompare(b.Nom || ""));
+          localStorage.setItem("eleves", JSON.stringify(eleves));
+          status.textContent = `✅ Élève ajouté : ${data.Prénom} ${data.Nom}`;
+          status.style.color = "green";
+        } else {
+          status.textContent = `⚠️ Élève déjà présent : ${data.Prénom} ${data.Nom}`;
+          status.style.color = "orange";
         }
-      ).catch(err => {
-        alert("Erreur d'accès à la caméra");
-      });
+      } catch (e) {
+        status.textContent = "❌ QR code invalide";
+        status.style.color = "red";
+      }
     }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          onScanSuccess
+        );
+      } else {
+        status.textContent = "❌ Aucune caméra détectée";
+        status.style.color = "red";
+      }
+    }).catch(err => {
+      status.textContent = "❌ Erreur accès caméra : " + err;
+      status.style.color = "red";
+    });
   </script>
 </body>
 </html>
