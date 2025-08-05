@@ -83,17 +83,15 @@
 
   <div class="controls">
     <button onclick="goHome()">🏠 Retour à l'accueil</button>
-
     <select id="triSelect">
       <option value="">-- Tri par... --</option>
     </select>
     <button onclick="trierDonnees()">Trier</button>
-
     <input type="text" id="searchInput" placeholder="🔍 Rechercher un mot-clé..." onkeyup="filtrerTableau()">
-
     <button onclick="goZenos()">🧬 Groupe ZENOS Tour</button>
     <button onclick="window.print()">🖶 Imprimer</button>
     <button onclick="exportCSV()">⬇️ Exporter CSV</button>
+    <button onclick="window.location.href='aide.html'" style="background-color:#34495e;">❓ Aide</button>
   </div>
 
   <table>
