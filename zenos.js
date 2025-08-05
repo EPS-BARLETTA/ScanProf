@@ -1,45 +1,111 @@
-function goHome() {
-  window.location.href = "index.html";
+let groupes = [];
+
+function chargerDonnees() {
+  const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
+  const valides = eleves.filter(e => e.VMA && e.Sexe && e.Nom && e.Prénom && !isNaN(parseFloat(e.VMA)));
+  const garcons = valides.filter(e => e.Sexe.toLowerCase().startsWith("g"));
+  const filles = valides.filter(e => e.Sexe.toLowerCase().startsWith("f"));
+
+  const trierParVMA = liste => liste.sort((a, b) => parseFloat(b.VMA) - parseFloat(a.VMA));
+
+  trierParVMA(garcons);
+  trierParVMA(filles);
+
+  const tous = [...garcons, ...filles];
+  trierParVMA(tous);
+
+  const nbGroupes = Math.floor(tous.length / 4);
+  groupes = [];
+
+  let restants = [...tous];
+
+  for (let i = 0; i < nbGroupes; i++) {
+    const groupe = [];
+
+    const top = restants.shift(); // VMA haute
+    const bottom = restants.pop(); // VMA basse
+
+    // Moyens : chercher au milieu
+    const mid1 = restants.splice(Math.floor(restants.length / 2), 1)[0];
+    const mid2 = restants.splice(Math.floor(restants.length / 2), 1)[0];
+
+    if (top && bottom && mid1 && mid2) {
+      const tentative = [top, mid1, mid2, bottom];
+      const garconsInGroupe = tentative.filter(e => e.Sexe.toLowerCase().startsWith("g")).length;
+      const fillesInGroupe = tentative.filter(e => e.Sexe.toLowerCase().startsWith("f")).length;
+
+      if (garconsInGroupe > 0 && fillesInGroupe > 0) {
+        groupes.push(tentative);
+      } else {
+        restants.push(top, mid1, mid2, bottom);
+      }
+    }
+  }
+
+  afficherGroupes();
 }
 
-function generatePDF() {
-  const groupes = document.querySelectorAll(".groupe");
+function afficherGroupes() {
+  const container = document.getElementById("groupesContainer");
+  container.innerHTML = "";
+
+  if (groupes.length === 0) {
+    container.innerHTML = "<p>Aucun groupe généré.</p>";
+    return;
+  }
+
+  groupes.forEach((groupe, index) => {
+    const table = document.createElement("table");
+    table.innerHTML = `
+      <thead>
+        <tr><th colspan="4">Groupe ${index + 1}</th></tr>
+        <tr><th>Nom</th><th>Prénom</th><th>Distance</th><th>VMA</th></tr>
+      </thead>
+      <tbody>
+        ${groupe.map(e => `
+          <tr>
+            <td>${e.Nom}</td>
+            <td>${e.Prénom}</td>
+            <td>${e.Distance || ""}</td>
+            <td>${e.VMA}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+    container.appendChild(table);
+  });
+}
+
+function genererPDF() {
   if (groupes.length === 0) {
     alert("Aucun groupe à imprimer.");
     return;
   }
 
-  const doc = new window.jspdf.jsPDF();
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text("ZENOS TOUR", 105, 15, { align: "center" });
 
-  doc.setFontSize(20);
-  doc.text("ZENOS TOUR", 105, 20, { align: "center" });
-
-  let y = 30;
-  groupes.forEach((groupe, i) => {
-    const rows = groupe.querySelectorAll("tbody tr");
-    doc.setFontSize(14);
-    doc.text(`Groupe ${i + 1}`, 15, y);
-
+  let y = 25;
+  doc.setFontSize(12);
+  groupes.forEach((groupe, index) => {
+    doc.text(`Groupe ${index + 1}`, 10, y);
+    y += 6;
+    doc.text("Nom", 20, y);
+    doc.text("Prénom", 60, y);
+    doc.text("Distance", 110, y);
+    doc.text("VMA", 150, y);
     y += 5;
-    doc.setFontSize(10);
-    doc.text("Nom", 15, y);
-    doc.text("Prénom", 55, y);
-    doc.text("Distance", 100, y);
-    doc.text("VMA", 140, y);
 
-    y += 5;
-    rows.forEach(row => {
-      const cells = row.querySelectorAll("td");
-      if (cells.length >= 4) {
-        doc.text(cells[0].textContent, 15, y);
-        doc.text(cells[1].textContent, 55, y);
-        doc.text(cells[2].textContent, 100, y);
-        doc.text(cells[3].textContent, 140, y);
-        y += 5;
-      }
+    groupe.forEach(e => {
+      doc.text(e.Nom, 20, y);
+      doc.text(e.Prénom, 60, y);
+      doc.text(e.Distance || "", 110, y);
+      doc.text(e.VMA, 150, y);
+      y += 5;
     });
-
     y += 5;
+
     if (y > 270) {
       doc.addPage();
       y = 20;
@@ -49,86 +115,73 @@ function generatePDF() {
   doc.setFontSize(10);
   doc.text("ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB", 105, 290, { align: "center" });
 
-  doc.save("ZENOS_TOUR.pdf");
+  doc.save("groupes-zenos.pdf");
 }
 
-function shuffle(array) {
-  return array.map(value => ({ value, sort: Math.random() }))
-              .sort((a, b) => a.sort - b.sort)
-              .map(({ value }) => value);
+function goHome() {
+  window.location.href = "index.html";
 }
 
-function generateGroups() {
-  const container = document.getElementById("groupesContainer");
-  const data = JSON.parse(localStorage.getItem("eleves")) || [];
+function afficherEquilibre() {
+  const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
+  const vmaTranches = { "8–10": 0, "10–12": 0, "12–14": 0, "14–16": 0, "16+": 0 };
+  const distTranches = { "0–800": 0, "800–1000": 0, "1000–1200": 0, "1200+": 0 };
+  const sexes = { Filles: 0, Garçons: 0 };
 
-  if (data.length < 4 || !data[0].VMA || !data[0].Sexe) {
-    container.innerHTML = "<p>❌ Données insuffisantes ou non compatibles avec les groupes ZENOS (VMA et Sexe requis).</p>";
-    return;
-  }
+  eleves.forEach(e => {
+    const vma = parseFloat(e.VMA);
+    const dist = parseFloat(e.Distance);
 
-  const eleves = [...data].filter(e => e.VMA && !isNaN(parseFloat(e.VMA)));
-  eleves.forEach(e => e.VMA = parseFloat(e.VMA));
-  eleves.sort((a, b) => b.VMA - a.VMA);
-
-  const total = eleves.length;
-  const groupCount = Math.floor(total / 4);
-  const remainder = total % 4;
-
-  const high = eleves.slice(0, groupCount); // top VMA
-  const low = eleves.slice(-groupCount);    // low VMA
-  const middle = eleves.slice(groupCount, total - groupCount); // middle VMA
-  const mixedMiddle = shuffle([...middle]);
-
-  const groups = [];
-
-  for (let i = 0; i < groupCount; i++) {
-    const group = [];
-    if (high[i]) group.push(high[i]);
-    if (low[i]) group.push(low[i]);
-    if (mixedMiddle[2 * i]) group.push(mixedMiddle[2 * i]);
-    if (mixedMiddle[2 * i + 1]) group.push(mixedMiddle[2 * i + 1]);
-
-    if (group.length === 4 && isMixed(group)) {
-      groups.push(group);
+    if (!isNaN(vma)) {
+      if (vma < 10) vmaTranches["8–10"]++;
+      else if (vma < 12) vmaTranches["10–12"]++;
+      else if (vma < 14) vmaTranches["12–14"]++;
+      else if (vma < 16) vmaTranches["14–16"]++;
+      else vmaTranches["16+"]++;
     }
-  }
 
-  // Affichage
-  container.innerHTML = "";
-  groups.forEach((groupe, index) => {
-    const table = document.createElement("table");
-    table.classList.add("groupe");
+    if (!isNaN(dist)) {
+      if (dist < 800) distTranches["0–800"]++;
+      else if (dist < 1000) distTranches["800–1000"]++;
+      else if (dist < 1200) distTranches["1000–1200"]++;
+      else distTranches["1200+"]++;
+    }
 
-    const caption = document.createElement("caption");
-    caption.textContent = `Groupe ${index + 1}`;
-    caption.style.fontWeight = "bold";
-    caption.style.marginBottom = "5px";
-    table.appendChild(caption);
+    if (e.Sexe?.toLowerCase().startsWith("f")) sexes["Filles"]++;
+    else if (e.Sexe?.toLowerCase().startsWith("g")) sexes["Garçons"]++;
+  });
 
-    const thead = document.createElement("thead");
-    thead.innerHTML = "<tr><th>Nom</th><th>Prénom</th><th>Distance</th><th>VMA</th></tr>";
-    table.appendChild(thead);
+  const ctx = document.getElementById("chart").getContext("2d");
+  if (window.myChart) window.myChart.destroy();
 
-    const tbody = document.createElement("tbody");
-    groupe.forEach(eleve => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${eleve.Nom || ""}</td>
-        <td>${eleve.Prénom || ""}</td>
-        <td>${eleve.Distance || ""}</td>
-        <td>${eleve.VMA}</td>`;
-      tbody.appendChild(row);
-    });
-
-    table.appendChild(tbody);
-    container.appendChild(table);
+  window.myChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: [
+        ...Object.keys(vmaTranches).map(l => `VMA ${l}`),
+        ...Object.keys(distTranches).map(l => `Distance ${l}`),
+        "Filles", "Garçons"
+      ],
+      datasets: [{
+        label: "Répartition",
+        data: [
+          ...Object.values(vmaTranches),
+          ...Object.values(distTranches),
+          sexes["Filles"], sexes["Garçons"]
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
   });
 }
 
-function isMixed(groupe) {
-  const sexes = groupe.map(e => e.Sexe?.toLowerCase());
-  return sexes.includes("f") && sexes.includes("m");
-}
-
-window.onload = generateGroups;
+window.onload = () => {
+  chargerDonnees();
+};
