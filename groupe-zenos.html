@@ -24,18 +24,29 @@
       margin-bottom: 20px;
     }
 
-    button {
+    .controls button {
       padding: 10px 20px;
-      background-color: #9b59b6;
-      color: white;
       border: none;
       border-radius: 5px;
       font-size: 16px;
       cursor: pointer;
+      color: white;
     }
 
-    button:hover {
+    .btn-standard {
+      background-color: #9b59b6;
+    }
+
+    .btn-standard:hover {
       background-color: #8e44ad;
+    }
+
+    .btn-analyse {
+      background-color: #e67e22;
+    }
+
+    .btn-analyse:hover {
+      background-color: #d35400;
     }
 
     table {
@@ -77,9 +88,9 @@
   </p>
 
   <div class="controls">
-    <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
-    <button onclick="window.print()">🖶 Imprimer</button>
-    <button onclick="genererRadar()">📊 Afficher l'équilibre des groupes</button>
+    <button class="btn-standard" onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+    <button class="btn-standard" onclick="window.print()">🖶 Imprimer</button>
+    <button class="btn-analyse" onclick="genererRadar()">📊 Afficher l'équilibre des groupes</button>
   </div>
 
   <div id="groupesContainer"></div>
