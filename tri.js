@@ -58,9 +58,23 @@ function buildTable(data) {
 function sortTable() {
   const key = document.getElementById("sortKey").value;
   const data = getData();
-  data.sort((a, b) => (a[key] || "").toString().localeCompare((b[key] || "").toString()));
-  saveData(data);
-  buildTable(data);
+
+  if (!key || data.length === 0) return;
+
+  const sorted = [...data].sort((a, b) => {
+    const valA = a[key] || "";
+    const valB = b[key] || "";
+
+    const isNumeric = !isNaN(valA) && !isNaN(valB);
+    if (isNumeric) {
+      return parseFloat(valA) - parseFloat(valB);
+    } else {
+      return valA.toString().localeCompare(valB.toString(), "fr", { sensitivity: "base" });
+    }
+  });
+
+  saveData(sorted);
+  buildTable(sorted);
 }
 
 function resetData() {
