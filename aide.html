@@ -1,58 +1,134 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Aide ScanProf</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Aide - ScanProf</title>
   <style>
-    body { font-family: Arial; padding: 20px; background-color: #f9fcff; }
-    h1 { text-align: center; }
-    section { margin-bottom: 30px; }
-    h2 { color: #2c3e50; }
-    ul { line-height: 1.6; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    h1, h2 {
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 40px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    ul {
+      margin-left: 20px;
+    }
+
+    code {
+      background-color: #eee;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .btn-retour {
+      display: block;
+      margin: 30px auto 0;
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      text-align: center;
+      border-radius: 5px;
+      width: fit-content;
+      text-decoration: none;
+    }
+
+    .btn-retour:hover {
+      background-color: #2980b9;
+    }
   </style>
 </head>
 <body>
-  <h1>Aide - Application ScanProf</h1>
 
-  <section>
-    <h2>📸 Accueil (index.html)</h2>
-    <ul>
-      <li>Permet d’importer un fichier CSV ou de scanner un QR code compatible RunStats</li>
-      <li>Les données sont stockées automatiquement dans le navigateur</li>
-    </ul>
-  </section>
+  <h1>📚 Aide - Application ScanProf</h1>
 
-  <section>
-    <h2>📋 Tri des participants (tri.html)</h2>
-    <ul>
-      <li>Affiche les colonnes automatiquement selon les données importées</li>
-      <li>Cliquez sur un en-tête pour trier dynamiquement la colonne</li>
-      <li>Boutons : retour, imprimer, exporter CSV, accès Groupe ZENOS</li>
-    </ul>
-  </section>
+  <p style="text-align:center;">
+    Dernière mise à jour : Août 2025
+  </p>
 
-  <section>
-    <h2>🧬 Groupe ZENOS Tour (groupe-zenos.html)</h2>
-    <ul>
-      <li>Génère des groupes mixtes et équilibrés pour l’événement ZENOS Tour</li>
-      <li>Tri basé sur VMA et sexe uniquement</li>
-      <li>Compatible uniquement avec des données issues de RunStats</li>
-      <li>Exportation CSV + impression disponibles</li>
-    </ul>
-  </section>
+  <h2>🔎 À quoi sert ScanProf ?</h2>
+  <p>
+    ScanProf est une application Web conçue pour les professeurs d'EPS. Elle permet de :
+  </p>
+  <ul>
+    <li>Scanner ou importer des données élèves issues d’autres applications EPS (ex. RunStats, tournoi, escalade...)</li>
+    <li>Afficher les élèves automatiquement dans un tableau</li>
+    <li>Trier dynamiquement selon les colonnes détectées (nom, classe, VMA, distance, points, etc.)</li>
+    <li>Exporter les données en CSV ou imprimer les résultats</li>
+    <li>Générer des <strong>groupes ZENOS Tour</strong> hétérogènes (spécial RunStats)</li>
+    <li>Créer un PDF récapitulatif des groupes ZENOS</li>
+  </ul>
 
-  <section>
-    <h2>📦 Résumé (resume.html)</h2>
-    <ul>
-      <li>Montre les résultats de 2 élèves avec un QR code généré</li>
-      <li>QR code scannable par ScanProf pour ajouter les élèves au tri</li>
-      <li>Permet téléchargement du QR code et d’un fichier CSV</li>
-    </ul>
-  </section>
+  <h2>📥 1. Scanner ou importer un fichier</h2>
+  <p>
+    Depuis la page d’accueil, vous pouvez :
+  </p>
+  <ul>
+    <li>Scanner un <strong>QR code</strong> généré par une autre application (ex. RunStats)</li>
+    <li>Ou importer un fichier <code>.csv</code> contenant les données élèves</li>
+  </ul>
 
-  <footer style="margin-top: 40px; text-align:center;">
-    ScanProf – Réseau ZENOS – Lycée Vauban – JB
-  </footer>
+  <h2>📊 2. Résumé des élèves</h2>
+  <p>
+    Les élèves sont affichés automatiquement dans un tableau :
+  </p>
+  <ul>
+    <li>Un <strong>menu déroulant</strong> permet de trier par nom, classe, sexe, VMA, etc.</li>
+    <li>Une <strong>zone de recherche</strong> permet de filtrer par mots-clés (ex. “5A”, “Lola”)</li>
+    <li>Vous pouvez <strong>exporter les données</strong> en CSV ou <strong>imprimer</strong> le tableau</li>
+    <li>Bouton <strong>“Groupe ZENOS Tour”</strong> si vous utilisez un fichier RunStats compatible</li>
+  </ul>
+
+  <h2>🧬 3. Groupes ZENOS Tour (spécifique RunStats)</h2>
+  <p>
+    Ce module crée des groupes hétérogènes de 4 élèves selon la VMA et la mixité :
+  </p>
+  <ul>
+    <li>1 élève VMA basse + 2 élèves VMA moyenne + 1 élève VMA haute</li>
+    <li>Groupes obligatoirement <strong>mixtes</strong></li>
+    <li>Les élèves non répartis (si groupe incomplet ou non mixte) sont affichés à part</li>
+  </ul>
+
+  <h2>📄 4. Générer un PDF</h2>
+  <p>
+    Un bouton dédié vous permet de générer un PDF :
+  </p>
+  <ul>
+    <li>Affiche <strong>tous les groupes ZENOS</strong> sur une seule page</li>
+    <li>Colonnes : Nom, Prénom, Distance, VMA</li>
+    <li>Titre : <strong>ZENOS TOUR</strong></li>
+    <li>Pied de page : <em>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</em></li>
+  </ul>
+
+  <h2>📈 5. Analyse visuelle (graphique)</h2>
+  <p>
+    Un bouton orange permet d'afficher un graphique clair :
+  </p>
+  <ul>
+    <li>Répartition des élèves par <strong>tranches de VMA</strong> et <strong>Distance</strong></li>
+    <li>Présentation sous forme d’histogrammes colorés</li>
+    <li>Permet de visualiser l’équilibre des groupes</li>
+  </ul>
+
+  <h2>💡 Astuces et idées d’évolution</h2>
+  <ul>
+    <li>Les fichiers CSV exportés peuvent être stockés sur iPad mais ne sont pas réutilisables automatiquement dans l’application.</li>
+    <li>À l’avenir, une fonction d’<strong>import de résultats d’une séance précédente</strong> pourrait être ajoutée (pour suivi, progression, etc.)</li>
+  </ul>
+
+  <a class="btn-retour" href="index.html">🏠 Retour à l'accueil</a>
+
 </body>
 </html>
