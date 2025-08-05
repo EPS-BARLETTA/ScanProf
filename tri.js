@@ -1,65 +1,69 @@
 document.addEventListener("DOMContentLoaded", () => {
   const tableBody = document.getElementById("elevesTableBody");
+  const triSelect = document.getElementById("triSelect");
   const eleves = JSON.parse(localStorage.getItem("eleves") || "[]");
 
   if (!eleves.length) {
-    tableBody.innerHTML = '<tr><td colspan="7">Aucun élève chargé. Veuillez d\'abord scanner ou importer des données.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="10">Aucun élève chargé. Veuillez d’abord scanner ou importer des données.</td></tr>';
     return;
   }
 
+  // Génère dynamiquement les colonnes disponibles
+  const colonnes = Object.keys(eleves[0]);
+  triSelect.innerHTML = colonnes.map(col => `<option value="${col}">${col.charAt(0).toUpperCase() + col.slice(1)}</option>`).join("");
+
+  // Affiche les données dans le tableau
   function renderTable(data) {
     tableBody.innerHTML = data.map(eleve => `
       <tr>
-        <td>${eleve.nom}</td>
-        <td>${eleve.prenom}</td>
-        <td>${eleve.classe}</td>
-        <td>${eleve.sexe}</td>
-        <td>${eleve.distance || ""}</td>
-        <td>${eleve.vitesse || ""}</td>
-        <td>${eleve.vma || ""}</td>
+        ${colonnes.map(col => `<td>${eleve[col] || ""}</td>`).join("")}
       </tr>
     `).join("");
   }
 
-  function sortBy(key, ascending = true) {
+  // Fonction de tri selon la clé sélectionnée
+  document.getElementById("btnTrier").addEventListener("click", () => {
+    const critere = triSelect.value;
     eleves.sort((a, b) => {
-      if (typeof a[key] === "number") {
-        return ascending ? a[key] - b[key] : b[key] - a[key];
-      } else {
-        return ascending
-          ? (a[key] || "").localeCompare(b[key] || "")
-          : (b[key] || "").localeCompare(a[key] || "");
+      const valA = a[critere];
+      const valB = b[critere];
+      if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
+        return parseFloat(valA) - parseFloat(valB);
       }
+      return (valA || "").toString().localeCompare((valB || "").toString());
     });
     renderTable(eleves);
-  }
+  });
 
-  // Tri initial (par nom)
-  renderTable(eleves);
+  // Export CSV
+  document.getElementById("btnExporter").addEventListener("click", () => {
+    const lignes = [colonnes];
+    eleves.forEach(eleve => {
+      lignes.push(colonnes.map(col => eleve[col] || ""));
+    });
+    const csv = lignes.map(ligne => ligne.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "eleves_tries.csv";
+    link.click();
+  });
 
-  // Fonctions boutons
-  window.sortBy = (key) => sortBy(key);
+  // Impression
+  document.getElementById("btnImprimer").addEventListener("click", () => {
+    window.print();
+  });
 
-  window.goHome = () => {
+  // Retour accueil
+  document.getElementById("btnAccueil").addEventListener("click", () => {
     window.location.href = "index.html";
-  };
+  });
 
-  window.goZenos = () => {
+  // Groupe ZENOS
+  document.getElementById("btnZenos").addEventListener("click", () => {
     window.location.href = "groupe-zenos.html";
-  };
+  });
 
-  window.exportCSV = () => {
-    const headers = ["Nom", "Prénom", "Classe", "Sexe", "Distance", "Vitesse", "VMA"];
-    const rows = eleves.map(e =>
-      [e.nom, e.prenom, e.classe, e.sexe, e.distance || "", e.vitesse || "", e.vma || ""]
-    );
-    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "participants_scanprof.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  // Tri initial
+  renderTable(eleves);
 });
