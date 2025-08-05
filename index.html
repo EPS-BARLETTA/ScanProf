@@ -9,7 +9,7 @@
       font-family: Arial, sans-serif;
       background-color: #f0f6ff;
       text-align: center;
-      padding: 50px;
+      padding: 30px;
     }
 
     h1 {
@@ -49,8 +49,17 @@
       background-color: #2c3e50;
     }
 
+    #qr-reader {
+      width: 300px;
+      margin: 20px auto;
+      border: 2px solid #2ecc71;
+      border-radius: 8px;
+      background: white;
+      padding: 10px;
+    }
+
     .footer {
-      margin-top: 60px;
+      margin-top: 40px;
       font-size: 0.9em;
       color: #666;
     }
@@ -64,13 +73,15 @@
 
   <h1>Bienvenue sur ScanProf</h1>
 
+  <!-- SCANNEUR -->
+  <div id="qr-reader"></div>
+  <p id="resultMessage" style="color: green; font-weight: bold;"></p>
+
+  <!-- Boutons -->
   <a href="tri.html" class="btn">📂 Voir les participants</a>
-  <a href="groupe-zenos.html" class="btn">🧬 Groupe ZENOS Tour</a>
   <a href="aide.html" class="btn btn-dark">❓ Aide</a>
 
   <br><br>
-
-  <!-- Import CSV existant -->
   <label for="importCSV" class="btn btn-secondary">📥 Importer un fichier CSV existant</label>
   <input type="file" id="importCSV" accept=".csv" onchange="importerCSV(event)">
 
@@ -78,7 +89,30 @@
     Lycée Vauban - Réseau ZENOS - Application ScanProf
   </div>
 
+  <!-- Librairie scanner locale -->
+  <script src="scanner.min.js"></script>
+
   <script>
+    const participants = JSON.parse(localStorage.getItem("participants")) || [];
+
+    function onScanSuccess(decodedText, decodedResult) {
+      try {
+        const data = JSON.parse(decodedText);
+        if (data.Nom && data.Prénom) {
+          participants.push(data);
+          localStorage.setItem("participants", JSON.stringify(participants));
+          document.getElementById("resultMessage").textContent = `✅ Élève ajouté : ${data.Prenom || data.Prénom} ${data.Nom}`;
+        } else {
+          document.getElementById("resultMessage").textContent = "⚠️ QR code non reconnu.";
+        }
+      } catch (e) {
+        document.getElementById("resultMessage").textContent = "⚠️ QR code invalide.";
+      }
+    }
+
+    const scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+    scanner.render(onScanSuccess);
+
     function importerCSV(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -89,7 +123,7 @@
         const lignes = text.trim().split('\n');
         const enTetes = lignes[0].split(',');
 
-        const participants = lignes.slice(1).map(ligne => {
+        const data = lignes.slice(1).map(ligne => {
           const valeurs = ligne.split(',');
           const obj = {};
           enTetes.forEach((col, i) => {
@@ -98,7 +132,7 @@
           return obj;
         });
 
-        localStorage.setItem("participants", JSON.stringify(participants));
+        localStorage.setItem("participants", JSON.stringify(data));
         window.location.href = "tri.html";
       };
       reader.readAsText(file);
