@@ -1,135 +1,96 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Aide - ScanProf</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f7f9fc;
-      color: #333;
+      background-color: #f9f9f9;
       padding: 20px;
       line-height: 1.6;
     }
 
-    h1, h2 {
-      color: #2c3e50;
+    h1 {
       text-align: center;
+      color: #2c3e50;
     }
 
     h2 {
-      margin-top: 40px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 5px;
+      color: #34495e;
     }
 
     ul {
       margin-left: 20px;
     }
 
-    code {
-      background-color: #eee;
-      padding: 2px 5px;
-      border-radius: 4px;
-    }
-
-    .btn-retour {
+    button {
       display: block;
-      margin: 30px auto 0;
+      margin: 20px auto;
       padding: 10px 20px;
       background-color: #3498db;
       color: white;
-      text-align: center;
+      border: none;
       border-radius: 5px;
-      width: fit-content;
-      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
     }
 
-    .btn-retour:hover {
+    button:hover {
       background-color: #2980b9;
+    }
+
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 0.8em;
+      color: #777;
     }
   </style>
 </head>
 <body>
+  <h1>📘 Aide - ScanProf</h1>
 
-  <h1>📚 Aide - Application ScanProf</h1>
-
-  <p style="text-align:center;">
-    Dernière mise à jour : Août 2025
-  </p>
-
-  <h2>🔎 À quoi sert ScanProf ?</h2>
-  <p>
-    ScanProf est une application Web conçue pour les professeurs d'EPS. Elle permet de :
-  </p>
+  <h2>1. Accueil</h2>
   <ul>
-    <li>Scanner ou importer des données élèves issues d’autres applications EPS (ex. RunStats, tournoi, escalade...)</li>
-    <li>Afficher les élèves automatiquement dans un tableau</li>
-    <li>Trier dynamiquement selon les colonnes détectées (nom, classe, VMA, distance, points, etc.)</li>
-    <li>Exporter les données en CSV ou imprimer les résultats</li>
-    <li>Générer des <strong>groupes ZENOS Tour</strong> hétérogènes (spécial RunStats)</li>
-    <li>Créer un PDF récapitulatif des groupes ZENOS</li>
+    <li>Scanner un QR code élève (depuis RunStats ou autre).</li>
+    <li>Chaque élève est automatiquement ajouté au stockage local.</li>
+    <li>Un message vert confirme l’ajout (ou orange si déjà scanné).</li>
+    <li>Vous pouvez ensuite cliquer sur “Voir les participants”.</li>
   </ul>
 
-  <h2>📥 1. Importer les données élèves</h2>
-  <p>
-    Depuis la page d’accueil, vous pouvez :
-  </p>
+  <h2>2. Page “Participants enregistrés”</h2>
   <ul>
-    <li>📷 Scanner un <strong>QR code</strong> généré par une autre application (ex. RunStats)</li>
-    <li>📥 Cliquer sur <strong>"Importer un fichier CSV existant"</strong> pour recharger un fichier de résultats précédemment exporté et stocké dans votre iPad</li>
+    <li>Liste de tous les élèves scannés ou importés.</li>
+    <li>Tri dynamique possible selon n’importe quelle colonne (Nom, Classe, Sexe, VMA, Distance...)</li>
+    <li>Recherche texte : tapez “Lola” ou “5A” pour filtrer la liste.</li>
+    <li>Exporter CSV : crée un fichier avec tous les élèves.</li>
+    <li>Importer CSV : recharge une ancienne liste (scannée auparavant ou enregistrée dans Fichiers iPad).</li>
+    <li>Réinitialiser : efface tous les élèves stockés.</li>
+    <li>“Groupe ZENOS Tour” : envoie vers la page de création de groupes.</li>
   </ul>
 
-  <h2>📊 2. Résumé des élèves</h2>
-  <p>
-    Les élèves sont affichés automatiquement dans un tableau :
-  </p>
+  <h2>3. Page “Groupes ZENOS Tour”</h2>
   <ul>
-    <li>Un <strong>menu déroulant</strong> permet de trier par nom, classe, sexe, VMA, etc.</li>
-    <li>Une <strong>zone de recherche</strong> permet de filtrer par mots-clés (ex. “5A”, “Lola”)</li>
-    <li>Vous pouvez <strong>exporter les données</strong> en CSV ou <strong>imprimer</strong> le tableau</li>
-    <li>Bouton <strong>“Groupe ZENOS Tour”</strong> si vous utilisez un fichier RunStats compatible</li>
+    <li>Crée des groupes mixtes de 4 élèves selon la VMA.</li>
+    <li>Chaque groupe : 1 VMA haute, 1 basse, 2 moyennes, mixité assurée.</li>
+    <li>Seuls les groupes complets sont affichés.</li>
+    <li>Possibilité d’imprimer ou de générer un PDF avec tous les groupes.</li>
   </ul>
 
-  <h2>🧬 3. Groupes ZENOS Tour (spécifique RunStats)</h2>
-  <p>
-    Ce module crée des groupes hétérogènes de 4 élèves selon la VMA et la mixité :
-  </p>
+  <h2>4. Fonctionnement sur iPad</h2>
   <ul>
-    <li>1 élève VMA basse + 2 élèves VMA moyenne + 1 élève VMA haute</li>
-    <li>Groupes obligatoirement <strong>mixtes</strong></li>
-    <li>Les élèves non répartis (si groupe incomplet ou non mixte) sont affichés à part</li>
+    <li>Compatible avec Safari (et Chrome si autorisé à accéder à la caméra).</li>
+    <li>Le bouton “Exporter CSV” permet d’enregistrer les données dans “Fichiers”.</li>
+    <li>Pour importer un fichier : ouvrez à nouveau la page “Participants”, cliquez sur “Importer” et sélectionnez un fichier CSV déjà existant.</li>
   </ul>
 
-  <h2>📄 4. Générer un PDF</h2>
-  <p>
-    Un bouton dédié vous permet de générer un PDF :
-  </p>
-  <ul>
-    <li>Affiche <strong>tous les groupes ZENOS</strong> sur une seule page</li>
-    <li>Colonnes : Nom, Prénom, Distance, VMA</li>
-    <li>Titre : <strong>ZENOS TOUR</strong></li>
-    <li>Pied de page : <em>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</em></li>
-  </ul>
+  <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
 
-  <h2>📈 5. Analyse visuelle (graphique)</h2>
-  <p>
-    Un bouton orange permet d'afficher un graphique clair :
-  </p>
-  <ul>
-    <li>Répartition des élèves par <strong>tranches de VMA</strong> et <strong>Distance</strong></li>
-    <li>Présentation sous forme d’histogrammes colorés</li>
-    <li>Permet de visualiser l’équilibre des groupes</li>
-  </ul>
-
-  <h2>🧠 6. Astuces et évolutions possibles</h2>
-  <ul>
-    <li>Les fichiers CSV exportés peuvent être stockés localement, et désormais <strong>réimportés</strong> pour réutiliser les données d'une séance précédente</li>
-    <li>Fonction utile pour les comparaisons, les suivis, ou la constitution de nouveaux groupes</li>
-    <li>D’autres fonctions futures pourraient inclure l’import de temps intermédiaires, ou la gestion d’équipes sport co</li>
-  </ul>
-
-  <a class="btn-retour" href="index.html">🏠 Retour à l'accueil</a>
-
+  <footer>
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
+  </footer>
 </body>
 </html>
