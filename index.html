@@ -6,21 +6,69 @@
   <title>ScanProf - Accueil</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eef7ff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #2c3e50;
+    }
+
+    #reader {
+      width: 320px;
+      height: 320px;
+      margin: 20px auto;
+      border: 2px solid #3498db;
+      border-radius: 8px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.8em;
+      color: #777;
+    }
+  </style>
 </head>
 <body>
   <h1>📷 ScanProf - Bienvenue</h1>
-  <div id="reader" style="width: 320px; margin: auto;"></div>
-  <br>
+
+  <div id="reader"></div>
+
   <button onclick="window.location.href='tri.html'">👀 Voir les participants</button>
   <button onclick="window.location.href='aide.html'">❓ Aide</button>
-  <footer><p>ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB</p></footer>
+
+  <footer>
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
+  </footer>
+
   <script>
     const html5QrCode = new Html5Qrcode("reader");
+
     function onScanSuccess(decodedText) {
       try {
         const eleve = JSON.parse(decodedText);
         const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
         const existe = eleves.some(e => e.Nom === eleve.Nom && e.Prénom === eleve.Prénom);
+
         if (!existe) {
           eleves.push(eleve);
           localStorage.setItem("eleves", JSON.stringify(eleves));
@@ -28,15 +76,30 @@
         } else {
           alert(`⚠️ Élève déjà scanné : ${eleve.Prénom} ${eleve.Nom}`);
         }
-        html5QrCode.stop().then(() => window.location.href = "tri.html");
-      } catch (e) {
+
+        html5QrCode.stop().then(() => {
+          window.location.href = "tri.html";
+        });
+
+      } catch (err) {
         alert("❌ QR code invalide.");
       }
     }
+
     Html5Qrcode.getCameras().then(devices => {
-      const back = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-      html5QrCode.start({ deviceId: { exact: back.id } }, { fps: 10, qrbox: 250 }, onScanSuccess)
-        .catch(err => alert("Erreur d'accès à la caméra."));
+      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+      if (!backCam) {
+        alert("Aucune caméra disponible.");
+        return;
+      }
+
+      html5QrCode.start(
+        { deviceId: { exact: backCam.id } },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess
+      ).catch(err => {
+        alert("Erreur lors de l'ouverture de la caméra.");
+      });
     });
   </script>
 </body>
