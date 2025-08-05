@@ -1,132 +1,131 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const container = document.getElementById("groupesContainer");
-  const radarCanvas = document.getElementById("radarChart");
+const participants = JSON.parse(localStorage.getItem("participants")) || [];
 
-  const eleves = JSON.parse(localStorage.getItem("eleves") || "[]");
+function genererGroupesZenos() {
+  const data = [...participants].filter(p => p.VMA && p.Sexe && p.Nom && p.Prénom && p.Classe);
 
-  if (!eleves.length) {
-    container.innerHTML = "<p>Aucun élève chargé. Veuillez scanner les données depuis RunStats.</p>";
-    return;
-  }
+  data.forEach(p => p.VMA = parseFloat(p.VMA));
+  data.sort((a, b) => a.VMA - b.VMA);
 
-  // Filtrer uniquement les élèves avec données complètes
-  const valides = eleves.filter(e =>
-    e.nom && e.prenom && e.sexe && e.classe && e.vma && !isNaN(parseFloat(e.vma))
-  );
-
-  if (valides.length < 4) {
-    container.innerHTML = "<p>Pas assez de données valides pour former des groupes.</p>";
-    return;
-  }
-
-  // Trier par VMA décroissant
-  valides.sort((a, b) => b.vma - a.vma);
-
-  // Créer les groupes de manière hétérogène (type 1er + dernier)
+  const reste = [];
   const groupes = [];
-  const total = valides.length;
-  const tailleGroupe = 4;
 
-  for (let i = 0; i < Math.floor(total / tailleGroupe); i++) {
-    groupes.push([]);
-  }
+  while (data.length >= 4) {
+    const eleveFaible = data.shift();       // plus faible VMA
+    const eleveFort = data.pop();           // plus forte VMA
 
-  let i = 0;
-  let sens = 1;
-  for (const eleve of valides) {
-    groupes[i].push(eleve);
-    i += sens;
-    if (i === groupes.length || i < 0) {
-      sens *= -1;
-      i += sens;
+    const milieu = data.splice(0, 2);       // deux moyens
+
+    const groupe = [eleveFaible, ...milieu, eleveFort];
+
+    const sexes = groupe.map(e => e.Sexe.toUpperCase());
+    const garcons = sexes.filter(s => s === 'M').length;
+    const filles = sexes.filter(s => s === 'F').length;
+
+    if (garcons > 0 && filles > 0) {
+      groupes.push(groupe);
+    } else {
+      reste.push(...groupe); // pas mixte
     }
   }
 
-  // Affichage du tableau
-  let html = "";
-  groupes.forEach((groupe, idx) => {
-    html += `<h3>Groupe ${idx + 1}</h3>`;
-    html += `<table><thead><tr><th>Nom</th><th>Prénom</th><th>Sexe</th><th>Classe</th><th>Distance</th><th>Vitesse</th><th>VMA</th></tr></thead><tbody>`;
-    groupe.forEach(e => {
-      html += `<tr><td>${e.nom}</td><td>${e.prenom}</td><td>${e.sexe}</td><td>${e.classe}</td><td>${e.distance}</td><td>${e.vitesse}</td><td>${e.vma}</td></tr>`;
+  // S'il reste moins de 4 élèves
+  reste.push(...data);
+
+  afficherGroupes(groupes, reste);
+  window.groupesZenos = groupes.flat(); // pour le radar
+}
+
+function afficherGroupes(groupes, reste) {
+  const container = document.getElementById("groupesContainer");
+  container.innerHTML = "";
+
+  groupes.forEach((groupe, index) => {
+    const table = document.createElement("table");
+    const caption = document.createElement("caption");
+    caption.textContent = `Groupe ${index + 1}`;
+    table.appendChild(caption);
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = "<tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th></tr>";
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    groupe.forEach(el => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${el.Nom}</td><td>${el.Prénom}</td><td>${el.Classe}</td><td>${el.Sexe}</td><td>${el.VMA}</td>`;
+      tbody.appendChild(tr);
     });
-    html += `</tbody></table>`;
+
+    table.appendChild(tbody);
+    container.appendChild(table);
   });
 
-  container.innerHTML = html;
+  const resteContainer = document.getElementById("resteContainer");
+  if (reste.length > 0) {
+    resteContainer.innerHTML = `⚠️ ${reste.length} élève(s) n'ont pas été placés dans un groupe (pas assez ou mixité impossible).`;
+  } else {
+    resteContainer.innerHTML = "";
+  }
+}
 
-  // Export CSV
-  window.exportCSV = function () {
-    const csvRows = [["Groupe", "Nom", "Prénom", "Sexe", "Classe", "Distance", "Vitesse", "VMA"]];
-    groupes.forEach((groupe, index) => {
-      groupe.forEach(e => {
-        csvRows.push([index + 1, e.nom, e.prenom, e.sexe, e.classe, e.distance, e.vitesse, e.vma]);
-      });
-    });
+// Histogrammes VMA & Distance
+function genererRadar() {
+  const ctx = document.getElementById("radarChart");
+  if (!window.groupesZenos || groupesZenos.length === 0) return;
 
-    const csvContent = csvRows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "groupes_zenos.csv";
-    link.click();
-  };
+  const vmas = groupesZenos.map(p => parseFloat(p.VMA));
+  const distances = groupesZenos.map(p => parseFloat(p.Distance || 0));
 
-  // Radar chart
-  window.afficherRadar = function () {
-    if (radarCanvas.style.display === "block") return; // évite de le recréer
+  const tranchesVMA = ["<8", "8-10", "10-12", "12-14", "14+"];
+  const vmaCounts = [0, 0, 0, 0, 0];
+  vmas.forEach(v => {
+    if (v < 8) vmaCounts[0]++;
+    else if (v < 10) vmaCounts[1]++;
+    else if (v < 12) vmaCounts[2]++;
+    else if (v < 14) vmaCounts[3]++;
+    else vmaCounts[4]++;
+  });
 
-    const labels = groupes.map((_, i) => `Groupe ${i + 1}`);
-    const vmas = groupes.map(g => moy(g.map(e => parseFloat(e.vma))));
-    const vitesses = groupes.map(g => moy(g.map(e => parseFloat(e.vitesse))));
-    const distances = groupes.map(g => moy(g.map(e => parseFloat(e.distance))));
-    const mixite = groupes.map(g => {
-      const filles = g.filter(e => e.sexe.toLowerCase() === "f").length;
-      const garcons = g.filter(e => e.sexe.toLowerCase() === "m").length;
-      return Math.min(filles, garcons) / Math.max(filles || 1, garcons || 1);
-    });
+  const tranchesDist = ["<400", "400–800", "800–1200", "1200+"];
+  const distCounts = [0, 0, 0, 0];
+  distances.forEach(d => {
+    if (d < 400) distCounts[0]++;
+    else if (d < 800) distCounts[1]++;
+    else if (d < 1200) distCounts[2]++;
+    else distCounts[3]++;
+  });
 
-    const data = {
-      labels,
-      datasets: [
-        {
-          label: "VMA",
-          data: vmas,
-        },
-        {
-          label: "Vitesse",
-          data: vitesses,
-        },
-        {
-          label: "Distance",
-          data: distances,
-        },
-        {
-          label: "Mixité (équilibre F/G)",
-          data: mixite,
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [...tranchesVMA, ...tranchesDist],
+      datasets: [{
+        label: 'Répartition VMA',
+        data: [...vmaCounts, 0, 0, 0, 0], // Complété pour les 4 barres suivantes
+        backgroundColor: '#9b59b6'
+      }, {
+        label: 'Répartition Distance',
+        data: [0, 0, 0, 0, ...distCounts],
+        backgroundColor: '#3498db'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Analyse des groupes ZENOS'
         }
-      ]
-    };
-
-    new Chart(radarCanvas, {
-      type: "radar",
-      data,
-      options: {
-        responsive: true,
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: Math.max(...vmas.concat(vitesses, distances)) + 1
-          }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          stepSize: 1
         }
       }
-    });
+    }
+  });
+}
 
-    radarCanvas.style.display = "block";
-  };
-
-  function moy(arr) {
-    const valid = arr.filter(x => !isNaN(x));
-    return valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(2) : 0;
-  }
-});
+// Initialisation
+window.addEventListener("DOMContentLoaded", genererGroupesZenos);
