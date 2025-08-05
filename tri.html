@@ -18,22 +18,39 @@
     }
 
     .controls {
-      text-align: center;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
       margin: 20px 0;
     }
 
-    .controls button {
-      margin: 5px;
+    .controls button, .controls select, .controls input[type="text"] {
       padding: 10px 20px;
-      background-color: #3498db;
-      color: white;
+      font-size: 16px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
 
+    .controls button {
+      background-color: #3498db;
+      color: white;
+    }
+
     .controls button:hover {
       background-color: #2980b9;
+    }
+
+    #triSelect {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    #searchInput {
+      background-color: white;
+      border: 1px solid #ccc;
+      width: 200px;
     }
 
     table {
@@ -66,24 +83,21 @@
 
   <div class="controls">
     <button onclick="goHome()">🏠 Retour à l'accueil</button>
-    <button onclick="sortBy('nom')">⚙️ Tri dynamique (nom par défaut)</button>
+
+    <select id="triSelect">
+      <option value="">-- Tri par... --</option>
+    </select>
+    <button onclick="trierDonnees()">Trier</button>
+
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher un mot-clé..." onkeyup="filtrerTableau()">
+
     <button onclick="goZenos()">🧬 Groupe ZENOS Tour</button>
     <button onclick="window.print()">🖶 Imprimer</button>
     <button onclick="exportCSV()">⬇️ Exporter CSV</button>
   </div>
 
   <table>
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Prénom</th>
-        <th>Classe</th>
-        <th>Sexe</th>
-        <th>Distance</th>
-        <th>Vitesse</th>
-        <th>VMA</th>
-      </tr>
-    </thead>
+    <thead id="elevesTableHead"></thead>
     <tbody id="elevesTableBody"></tbody>
   </table>
 
