@@ -2,108 +2,119 @@ function goHome() {
   window.location.href = "index.html";
 }
 
-function generateGroups() {
-  const data = JSON.parse(localStorage.getItem("eleves")) || [];
-  const container = document.getElementById("groupesContainer");
-  container.innerHTML = "";
+function getData() {
+  return JSON.parse(localStorage.getItem("eleves")) || [];
+}
 
-  const validData = data.filter(e => e.VMA && e.Sexe && e.Nom && e.Prénom);
-  if (validData.length < 4) {
-    container.innerHTML = "<p>Pas assez de données pour former des groupes.</p>";
-    return;
-  }
+function generateZenosGroups(data) {
+  const valid = data.filter(e => e.VMA && e.Sexe && e.Nom && e.Prénom);
+  if (valid.length < 4) return [];
 
-  // Convertir VMA en nombre
-  validData.forEach(e => e.VMA = parseFloat(e.VMA));
+  // Trier les élèves par VMA
+  const sorted = valid.sort((a, b) => parseFloat(b.VMA) - parseFloat(a.VMA));
 
-  // Trier par VMA
-  validData.sort((a, b) => b.VMA - a.VMA);
+  const groupes = [];
 
-  const high = validData.slice(0, Math.floor(validData.length / 4));
-  const low = validData.slice(-Math.floor(validData.length / 4));
-  const mid = validData.slice(Math.floor(validData.length / 4), -Math.floor(validData.length / 4));
+  while (sorted.length >= 4) {
+    const high = sorted.shift();
+    const low = sorted.pop();
+    const mid1 = sorted.shift();
+    const mid2 = sorted.pop();
 
-  const groups = [];
-  while (high.length && low.length && mid.length >= 2) {
-    const group = [];
-    group.push(high.shift());
-    group.push(low.shift());
-    group.push(mid.shift());
-    group.push(mid.shift());
+    const groupe = [high, mid1, mid2, low];
 
-    const sexes = group.map(e => e.Sexe);
-    if (sexes.includes("F") && sexes.includes("M")) {
-      groups.push(group);
+    const filles = groupe.filter(e => e.Sexe.toLowerCase() === "f").length;
+    const garcons = groupe.filter(e => e.Sexe.toLowerCase() === "m").length;
+
+    if (filles > 0 && garcons > 0) {
+      groupes.push(groupe);
     }
   }
 
-  if (groups.length === 0) {
-    container.innerHTML = "<p>Aucun groupe valide n’a pu être généré avec les critères.</p>";
+  return groupes;
+}
+
+function displayGroups(groupes) {
+  const container = document.getElementById("groupesContainer");
+  container.innerHTML = "";
+
+  if (groupes.length === 0) {
+    container.innerHTML = "<p style='text-align:center;color:#888'>Aucun groupe généré. Vérifiez que les données sont complètes (Nom, Prénom, Sexe, VMA).</p>";
     return;
   }
 
-  // Affichage
-  groups.forEach((group, i) => {
-    const div = document.createElement("div");
-    div.className = "group";
-    div.innerHTML = `<h3>Groupe ${i + 1}</h3>`;
+  groupes.forEach((groupe, i) => {
     const table = document.createElement("table");
     const thead = document.createElement("thead");
-    thead.innerHTML = "<tr><th>Nom</th><th>Prénom</th><th>Sexe</th><th>Distance</th><th>VMA</th></tr>";
+    const tbody = document.createElement("tbody");
+
+    const titre = document.createElement("h3");
+    titre.textContent = `Groupe ${i + 1}`;
+    titre.style.marginTop = "30px";
+    titre.style.color = "#6a1b9a";
+    container.appendChild(titre);
+
+    const headRow = document.createElement("tr");
+    ["Nom", "Prénom", "Classe", "Sexe", "VMA", "Distance"].forEach(k => {
+      const th = document.createElement("th");
+      th.textContent = k;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
     table.appendChild(thead);
 
-    const tbody = document.createElement("tbody");
-    group.forEach(e => {
+    groupe.forEach(eleve => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${e.Nom}</td><td>${e.Prénom}</td><td>${e.Sexe}</td><td>${e.Distance || ""}</td><td>${e.VMA}</td>`;
+      ["Nom", "Prénom", "Classe", "Sexe", "VMA", "Distance"].forEach(k => {
+        const td = document.createElement("td");
+        td.textContent = eleve[k] || "";
+        tr.appendChild(td);
+      });
       tbody.appendChild(tr);
     });
-    table.appendChild(tbody);
-    div.appendChild(table);
-    container.appendChild(div);
-  });
 
-  // Stocker les groupes pour PDF
-  localStorage.setItem("groupesZenos", JSON.stringify(groups));
+    table.appendChild(tbody);
+    container.appendChild(table);
+  });
 }
 
-function downloadPDF() {
-  const groups = JSON.parse(localStorage.getItem("groupesZenos")) || [];
-  if (groups.length === 0) {
+function generatePDF() {
+  const groupes = generateZenosGroups(getData());
+  if (groupes.length === 0) {
     alert("Aucun groupe à imprimer.");
     return;
   }
 
-  let doc = new jsPDF();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
   doc.setFontSize(18);
   doc.text("ZENOS TOUR", 105, 15, null, null, "center");
-  doc.setFontSize(12);
 
   let y = 25;
-  groups.forEach((group, i) => {
-    doc.text(`Groupe ${i + 1}`, 15, y);
+  groupes.forEach((groupe, i) => {
+    doc.setFontSize(14);
+    doc.text(`Groupe ${i + 1}`, 10, y);
     y += 6;
-    doc.text("Nom", 20, y);
-    doc.text("Prénom", 60, y);
-    doc.text("Distance", 100, y);
-    doc.text("VMA", 140, y);
-    y += 6;
-    group.forEach(e => {
-      doc.text(e.Nom || "", 20, y);
-      doc.text(e.Prénom || "", 60, y);
-      doc.text(e.Distance || "", 100, y);
-      doc.text(String(e.VMA || ""), 140, y);
+    doc.setFontSize(10);
+    groupe.forEach(eleve => {
+      doc.text(`${eleve.Nom} ${eleve.Prénom} - ${eleve.Distance || ""}m - VMA: ${eleve.VMA}`, 12, y);
       y += 6;
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
     });
     y += 4;
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
   });
 
   doc.setFontSize(10);
   doc.text("ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB", 105, 285, null, null, "center");
-
-  doc.save("groupes-zenos.pdf");
+  doc.save("zenos_groups.pdf");
 }
+
+window.onload = function () {
+  const data = getData();
+  const groupes = generateZenosGroups(data);
+  displayGroups(groupes);
+};
