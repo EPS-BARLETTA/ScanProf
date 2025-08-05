@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ScanProf - Accueil</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,15 +15,6 @@
 
     h1 {
       color: #2c3e50;
-    }
-
-    #reader {
-      width: 320px;
-      height: 320px;
-      margin: 20px auto;
-      border: 2px solid #3498db;
-      border-radius: 8px;
-      display: none;
     }
 
     button {
@@ -52,8 +42,8 @@
 <body>
   <h1>📷 ScanProf - Bienvenue</h1>
 
-  <button onclick="startScanner()">📷 Scanner des QR Codes</button>
-  <div id="reader"></div>
+  <!-- ✅ Redirection vers la page scan.html -->
+  <button onclick="window.location.href='scan.html'">📷 Scanner des QR Codes</button>
 
   <button onclick="window.location.href='tri.html'">👀 Voir les participants</button>
   <button onclick="window.location.href='aide.html'">❓ Aide</button>
@@ -61,53 +51,5 @@
   <footer>
     ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
   </footer>
-
-  <script>
-    const html5QrCode = new Html5Qrcode("reader");
-
-    function startScanner() {
-      const readerDiv = document.getElementById("reader");
-      readerDiv.style.display = "block";
-
-      Html5Qrcode.getCameras().then(devices => {
-        const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-        if (!backCam) {
-          alert("Aucune caméra disponible.");
-          return;
-        }
-
-        html5QrCode.start(
-          { deviceId: { exact: backCam.id } },
-          { fps: 10, qrbox: 250 },
-          onScanSuccess
-        ).catch(err => {
-          alert("Erreur lors de l'ouverture de la caméra.");
-        });
-      });
-    }
-
-    function onScanSuccess(decodedText) {
-      try {
-        const eleve = JSON.parse(decodedText);
-        const eleves = JSON.parse(localStorage.getItem("eleves")) || [];
-        const existe = eleves.some(e => e.Nom === eleve.Nom && e.Prénom === eleve.Prénom);
-
-        if (!existe) {
-          eleves.push(eleve);
-          localStorage.setItem("eleves", JSON.stringify(eleves));
-          alert(`✅ Élève ajouté : ${eleve.Prénom} ${eleve.Nom}`);
-        } else {
-          alert(`⚠️ Élève déjà scanné : ${eleve.Prénom} ${eleve.Nom}`);
-        }
-
-        html5QrCode.stop().then(() => {
-          window.location.href = "tri.html";
-        });
-
-      } catch (err) {
-        alert("❌ QR code invalide.");
-      }
-    }
-  </script>
 </body>
 </html>
