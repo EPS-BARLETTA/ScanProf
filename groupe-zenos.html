@@ -3,53 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Groupes ZENOS Tour</title>
+  <title>ScanProf - Groupes ZENOS</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f7f0ff;
+      background-color: #fefaff;
       padding: 20px;
+      text-align: center;
     }
 
     h1 {
-      text-align: center;
-      color: #9b59b6;
+      color: #6c3483;
     }
 
     .controls {
+      margin: 20px 0;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 20px;
     }
 
-    .controls button {
+    button {
       padding: 10px 15px;
       font-size: 14px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      background-color: #9b59b6;
       color: white;
     }
 
-    .controls button:hover {
-      background-color: #8e44ad;
+    .btn-violet {
+      background-color: #9b59b6;
+    }
+
+    .btn-violet:hover {
+      background-color: #884ea0;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
-      margin-bottom: 30px;
+      margin-top: 20px;
+      margin-bottom: 40px;
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
+      padding: 10px;
     }
 
     th {
@@ -57,37 +61,34 @@
       color: white;
     }
 
+    canvas {
+      margin-top: 40px;
+    }
+
     footer {
       text-align: center;
       margin-top: 40px;
       font-size: 0.8em;
-      color: #666;
-    }
-
-    h2 {
-      margin-top: 30px;
-      color: #2c3e50;
+      color: #777;
     }
   </style>
 </head>
 <body>
-  <h1>Groupes ZENOS Tour</h1>
+  <h1>🧬 Groupes ZENOS Tour</h1>
 
   <div class="controls">
-    <button onclick="goHome()">🏠 Accueil</button>
-    <button onclick="window.print()">🖶 Imprimer</button>
-    <button onclick="generatePDF()">📄 Générer PDF</button>
-    <button onclick="window.location.href='aide.html'">❓ Aide</button>
+    <button class="btn-violet" onclick="goHome()">🏠 Accueil</button>
+    <button class="btn-violet" onclick="genererPDF()">📄 Générer PDF</button>
+    <button class="btn-violet" onclick="window.print()">🖶 Imprimer</button>
+    <button class="btn-violet" onclick="afficherEquilibre()">📊 Afficher l’équilibre des groupes</button>
+    <button class="btn-violet" onclick="window.location.href='aide.html'">❓ Aide</button>
   </div>
 
   <div id="groupesContainer"></div>
+  <canvas id="chart" width="400" height="300"></canvas>
 
   <footer>
     ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
-  <!-- Scripts -->
   <script src="zenos.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</body>
-</html>
