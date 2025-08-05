@@ -8,47 +8,40 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fef6ff;
+      background-color: #fdf0ff;
       padding: 20px;
     }
 
     h1 {
       text-align: center;
-      color: #8e44ad;
+      color: #6a1b9a;
     }
 
     .controls {
       text-align: center;
-      margin: 20px 0;
+      margin-bottom: 20px;
     }
 
     .controls button {
       margin: 5px;
       padding: 10px 20px;
       font-size: 16px;
-      border: none;
-      border-radius: 5px;
       background-color: #9b59b6;
       color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
 
     .controls button:hover {
-      background-color: #8e44ad;
+      background-color: #7e3c9e;
     }
 
     .group {
-      margin: 20px auto;
-      padding: 15px;
       border: 2px solid #9b59b6;
       border-radius: 10px;
-      max-width: 600px;
-      background-color: #faf0ff;
-    }
-
-    .group h2 {
-      margin-top: 0;
-      color: #9b59b6;
+      padding: 10px;
+      margin: 15px 0;
     }
 
     table {
@@ -59,7 +52,7 @@
 
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 6px;
       text-align: center;
     }
 
@@ -69,8 +62,8 @@
     }
 
     footer {
-      text-align: center;
       margin-top: 40px;
+      text-align: center;
       font-size: 0.8em;
       color: #666;
     }
@@ -81,20 +74,18 @@
 
   <div class="controls">
     <button onclick="goHome()">🏠 Retour à l'accueil</button>
-    <button onclick="window.print()">🖶 Imprimer</button>
-    <button onclick="generatePDF()">📄 Générer PDF</button>
-    <button onclick="showGraph()">📊 Afficher l’équilibre des groupes</button>
+    <button onclick="generateGroups()">🔁 Générer les groupes</button>
+    <button onclick="print()">🖶 Imprimer</button>
+    <button onclick="downloadPDF()">📄 Générer PDF</button>
     <button onclick="window.location.href='aide.html'">❓ Aide</button>
   </div>
 
   <div id="groupesContainer"></div>
-  <canvas id="graphCanvas" style="max-width:800px; margin: 30px auto; display:none;"></canvas>
 
   <footer>
-    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="zenos.js"></script>
 </body>
 </html>
