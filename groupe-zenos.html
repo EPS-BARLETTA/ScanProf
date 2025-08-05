@@ -3,61 +3,63 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ScanProf - Groupe ZENOS Tour</title>
+  <title>Groupes ZENOS Tour</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fefefe;
+      background-color: #fef6ff;
       padding: 20px;
     }
 
     h1 {
       text-align: center;
-      color: #2c3e50;
+      color: #8e44ad;
     }
 
     .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 20px;
+      text-align: center;
+      margin: 20px 0;
     }
 
     .controls button {
+      margin: 5px;
       padding: 10px 20px;
+      font-size: 16px;
       border: none;
       border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-      color: white;
-    }
-
-    .btn-standard {
       background-color: #9b59b6;
+      color: white;
+      cursor: pointer;
     }
 
-    .btn-standard:hover {
+    .controls button:hover {
       background-color: #8e44ad;
     }
 
-    .btn-analyse {
-      background-color: #e67e22;
+    .group {
+      margin: 20px auto;
+      padding: 15px;
+      border: 2px solid #9b59b6;
+      border-radius: 10px;
+      max-width: 600px;
+      background-color: #faf0ff;
     }
 
-    .btn-analyse:hover {
-      background-color: #d35400;
+    .group h2 {
+      margin-top: 0;
+      color: #9b59b6;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
     }
 
@@ -66,47 +68,33 @@
       color: white;
     }
 
-    .warning {
-      color: red;
+    footer {
       text-align: center;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-
-    canvas {
-      display: block;
-      margin: 30px auto;
-      max-width: 600px;
+      margin-top: 40px;
+      font-size: 0.8em;
+      color: #666;
     }
   </style>
 </head>
 <body>
-  <h1>Groupe ZENOS Tour</h1>
-
-  <p style="text-align:center; color:#888;">
-    ⚠️ Cette fonctionnalité nécessite un fichier issu de RunStats (Nom, Prénom, Classe, Sexe, VMA).
-  </p>
+  <h1>Groupes ZENOS Tour</h1>
 
   <div class="controls">
-    <button class="btn-standard" onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
-    <button class="btn-standard" onclick="window.print()">🖶 Imprimer</button>
-    <button class="btn-analyse" onclick="genererRadar()">📊 Afficher l'équilibre des groupes</button>
-    <button class="btn-analyse" onclick="genererPDF()">📄 Générer PDF</button>
-    <button class="btn-standard" onclick="window.location.href='aide.html'">❓ Aide</button>
+    <button onclick="goHome()">🏠 Retour à l'accueil</button>
+    <button onclick="window.print()">🖶 Imprimer</button>
+    <button onclick="generatePDF()">📄 Générer PDF</button>
+    <button onclick="showGraph()">📊 Afficher l’équilibre des groupes</button>
+    <button onclick="window.location.href='aide.html'">❓ Aide</button>
   </div>
 
   <div id="groupesContainer"></div>
-  <div id="resteContainer" class="warning"></div>
-  <canvas id="radarChart"></canvas>
+  <canvas id="graphCanvas" style="max-width:800px; margin: 30px auto; display:none;"></canvas>
 
-  <!-- 📊 Chart.js -->
+  <footer>
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
+  </footer>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- 📄 jsPDF + autoTable pour PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-
-  <!-- Script ZENOS -->
   <script src="zenos.js"></script>
 </body>
 </html>
