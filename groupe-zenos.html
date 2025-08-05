@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fdf0ff;
+      background-color: #f9f6ff;
       padding: 20px;
     }
 
@@ -24,35 +24,28 @@
 
     .controls button {
       margin: 5px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 10px 16px;
       background-color: #9b59b6;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 15px;
     }
 
     .controls button:hover {
-      background-color: #7e3c9e;
-    }
-
-    .group {
-      border: 2px solid #9b59b6;
-      border-radius: 10px;
-      padding: 10px;
-      margin: 15px 0;
+      background-color: #8e44ad;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 15px;
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 6px;
+      padding: 8px;
       text-align: center;
     }
 
@@ -62,8 +55,8 @@
     }
 
     footer {
-      margin-top: 40px;
       text-align: center;
+      margin-top: 30px;
       font-size: 0.8em;
       color: #666;
     }
@@ -73,17 +66,16 @@
   <h1>Groupes ZENOS Tour</h1>
 
   <div class="controls">
-    <button onclick="goHome()">🏠 Retour à l'accueil</button>
-    <button onclick="generateGroups()">🔁 Générer les groupes</button>
-    <button onclick="print()">🖶 Imprimer</button>
-    <button onclick="downloadPDF()">📄 Générer PDF</button>
+    <button onclick="goHome()">🏠 Retour à l’accueil</button>
+    <button onclick="window.print()">🖶 Imprimer</button>
+    <button onclick="generatePDF()">📄 Générer PDF</button>
     <button onclick="window.location.href='aide.html'">❓ Aide</button>
   </div>
 
   <div id="groupesContainer"></div>
 
   <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
   </footer>
 
   <script src="zenos.js"></script>
