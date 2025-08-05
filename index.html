@@ -33,10 +33,30 @@
       background-color: #2980b9;
     }
 
+    .btn-secondary {
+      background-color: #2ecc71;
+    }
+
+    .btn-secondary:hover {
+      background-color: #27ae60;
+    }
+
+    .btn-dark {
+      background-color: #34495e;
+    }
+
+    .btn-dark:hover {
+      background-color: #2c3e50;
+    }
+
     .footer {
       margin-top: 60px;
       font-size: 0.9em;
       color: #666;
+    }
+
+    input[type="file"] {
+      display: none;
     }
   </style>
 </head>
@@ -46,11 +66,44 @@
 
   <a href="tri.html" class="btn">📂 Voir les participants</a>
   <a href="groupe-zenos.html" class="btn">🧬 Groupe ZENOS Tour</a>
-  <a href="aide.html" class="btn" style="background-color:#34495e;">❓ Aide</a>
+  <a href="aide.html" class="btn btn-dark">❓ Aide</a>
+
+  <br><br>
+
+  <!-- Import CSV existant -->
+  <label for="importCSV" class="btn btn-secondary">📥 Importer un fichier CSV existant</label>
+  <input type="file" id="importCSV" accept=".csv" onchange="importerCSV(event)">
 
   <div class="footer">
     Lycée Vauban - Réseau ZENOS - Application ScanProf
   </div>
+
+  <script>
+    function importerCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lignes = text.trim().split('\n');
+        const enTetes = lignes[0].split(',');
+
+        const participants = lignes.slice(1).map(ligne => {
+          const valeurs = ligne.split(',');
+          const obj = {};
+          enTetes.forEach((col, i) => {
+            obj[col.trim()] = valeurs[i]?.trim();
+          });
+          return obj;
+        });
+
+        localStorage.setItem("participants", JSON.stringify(participants));
+        window.location.href = "tri.html";
+      };
+      reader.readAsText(file);
+    }
+  </script>
 
 </body>
 </html>
