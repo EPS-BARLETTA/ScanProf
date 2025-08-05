@@ -91,13 +91,21 @@
     <button class="btn-standard" onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
     <button class="btn-standard" onclick="window.print()">🖶 Imprimer</button>
     <button class="btn-analyse" onclick="genererRadar()">📊 Afficher l'équilibre des groupes</button>
+    <button class="btn-analyse" onclick="genererPDF()">📄 Générer PDF</button>
   </div>
 
   <div id="groupesContainer"></div>
   <div id="resteContainer" class="warning"></div>
   <canvas id="radarChart"></canvas>
 
+  <!-- 📊 Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- 📄 jsPDF + autoTable pour PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Script ZENOS -->
   <script src="zenos.js"></script>
 </body>
 </html>
