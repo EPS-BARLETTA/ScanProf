@@ -58,8 +58,8 @@
   <div class="buttons">
     <button onclick="startScan()">📷 Scanner des QR Codes</button>
     <button onclick="window.location.href='tri.html'">📂 Voir les participants</button>
-    <button onclick="window.location.href='aide.html'">❓ Aide</button>
     <button onclick="window.location.href='tri.html?import=1'">📁 Importer un fichier CSV</button>
+    <button onclick="window.location.href='aide.html'">❓ Aide</button>
   </div>
 
   <div id="reader"></div>
@@ -94,7 +94,7 @@
           }
         },
         (errorMessage) => {
-          // Silencieux
+          // silencieux
         }
       ).catch(err => {
         alert("Erreur d'accès à la caméra");
