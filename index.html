@@ -19,11 +19,15 @@
     }
 
     #reader {
-      width: 300px;
-      height: 300px;
+      width: 320px;
+      height: 320px;
       margin: 20px auto;
       border: 2px solid #3498db;
       border-radius: 8px;
+    }
+
+    input[type="file"] {
+      display: none;
     }
 
     button {
@@ -55,6 +59,8 @@
 
   <button onclick="window.location.href='tri.html'">👀 Voir les participants</button>
   <button onclick="window.location.href='aide.html'">❓ Aide</button>
+  <button onclick="document.getElementById('importFile').click()">📥 Importer un fichier CSV</button>
+  <input type="file" id="importFile" accept=".csv" onchange="handleCSV(event)" />
 
   <footer>
     ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
@@ -87,15 +93,45 @@
     }
 
     Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-        html5QrCode.start(
-          { deviceId: { exact: backCam.id } },
-          { fps: 10, qrbox: 250 },
-          onScanSuccess
-        );
+      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+      if (!backCam) {
+        alert("Aucune caméra disponible.");
+        return;
       }
+
+      html5QrCode.start(
+        { deviceId: { exact: backCam.id } },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess
+      ).catch(err => {
+        alert("Erreur lors de l'ouverture de la caméra.");
+      });
     });
+
+    function handleCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const content = e.target.result;
+        const rows = content.split("\n").filter(row => row.trim() !== "");
+        const headers = rows[0].split(",").map(h => h.trim());
+        const data = rows.slice(1).map(row => {
+          const values = row.split(",");
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = values[i]?.trim();
+          });
+          return obj;
+        });
+
+        localStorage.setItem("eleves", JSON.stringify(data));
+        alert("✅ Données CSV importées.");
+        window.location.href = "tri.html";
+      };
+      reader.readAsText(file);
+    }
   </script>
 </body>
 </html>
