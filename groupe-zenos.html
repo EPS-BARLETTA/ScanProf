@@ -5,32 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Groupes ZENOS Tour</title>
   <link rel="stylesheet" href="style.css" />
+  <script defer src="zenos.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f9f6ff;
+      background-color: #f7f0ff;
       padding: 20px;
     }
 
     h1 {
       text-align: center;
-      color: #6a1b9a;
+      color: #9b59b6;
     }
 
     .controls {
-      text-align: center;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
       margin-bottom: 20px;
     }
 
     .controls button {
-      margin: 5px;
-      padding: 10px 16px;
+      padding: 10px 15px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
       background-color: #9b59b6;
       color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
     }
 
     .controls button:hover {
@@ -40,7 +43,8 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
+      margin-top: 10px;
+      margin-bottom: 30px;
     }
 
     th, td {
@@ -56,9 +60,14 @@
 
     footer {
       text-align: center;
-      margin-top: 30px;
+      margin-top: 40px;
       font-size: 0.8em;
       color: #666;
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: #2c3e50;
     }
   </style>
 </head>
@@ -66,7 +75,7 @@
   <h1>Groupes ZENOS Tour</h1>
 
   <div class="controls">
-    <button onclick="goHome()">🏠 Retour à l’accueil</button>
+    <button onclick="goHome()">🏠 Accueil</button>
     <button onclick="window.print()">🖶 Imprimer</button>
     <button onclick="generatePDF()">📄 Générer PDF</button>
     <button onclick="window.location.href='aide.html'">❓ Aide</button>
@@ -77,7 +86,5 @@
   <footer>
     ScanProf - Réseau ZENOS - Lycée Vauban - LUXEMBOURG - JB
   </footer>
-
-  <script src="zenos.js"></script>
 </body>
 </html>
