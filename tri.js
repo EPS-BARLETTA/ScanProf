@@ -6,108 +6,93 @@ function goZenos() {
   window.location.href = "groupe-zenos.html";
 }
 
-function getData() {
-  return JSON.parse(localStorage.getItem("eleves")) || [];
-}
-
-function saveData(data) {
-  localStorage.setItem("eleves", JSON.stringify(data));
-}
-
-function buildTable(data) {
+function afficherTableau(data) {
   const tableHead = document.getElementById("tableHead");
   const tbody = document.getElementById("elevesTableBody");
-  tbody.innerHTML = "";
   tableHead.innerHTML = "";
+  tbody.innerHTML = "";
 
-  if (data.length === 0) return;
+  if (data.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='100%'>Aucun participant enregistré.</td></tr>";
+    return;
+  }
 
+  // Génère les entêtes de colonne dynamiquement
   const keys = Object.keys(data[0]);
-
-  // Créer l'en-tête du tableau
-  const headRow = document.createElement("tr");
+  const headerRow = document.createElement("tr");
   keys.forEach(key => {
     const th = document.createElement("th");
     th.textContent = key;
-    headRow.appendChild(th);
+    headerRow.appendChild(th);
   });
-  tableHead.appendChild(headRow);
+  tableHead.appendChild(headerRow);
 
-  // Créer les lignes du tableau
+  // Remplit le tableau
   data.forEach(eleve => {
-    const tr = document.createElement("tr");
+    const row = document.createElement("tr");
     keys.forEach(key => {
       const td = document.createElement("td");
       td.textContent = eleve[key] || "";
-      tr.appendChild(td);
+      row.appendChild(td);
     });
-    tbody.appendChild(tr);
+    tbody.appendChild(row);
   });
 
-  // Remplir le menu déroulant avec les colonnes
-  const sortSelect = document.getElementById("sortKey");
-  sortSelect.innerHTML = "";
-  keys.forEach(k => {
+  // Met à jour le menu déroulant pour le tri
+  const triSelect = document.getElementById("triSelect");
+  triSelect.innerHTML = "";
+  keys.forEach(key => {
     const option = document.createElement("option");
-    option.value = k;
-    option.textContent = "Trier par " + k;
-    sortSelect.appendChild(option);
+    option.value = key;
+    option.textContent = "Trier par " + key;
+    triSelect.appendChild(option);
   });
 }
 
-function sortTable() {
-  const key = document.getElementById("sortKey").value;
-  const data = getData();
+function applySort() {
+  const triKey = document.getElementById("triSelect").value;
+  const data = JSON.parse(localStorage.getItem("eleves")) || [];
 
-  if (!key || data.length === 0) return;
+  if (!triKey) return;
 
-  const sorted = [...data].sort((a, b) => {
-    const valA = a[key] || "";
-    const valB = b[key] || "";
+  data.sort((a, b) => {
+    const valA = a[triKey] || "";
+    const valB = b[triKey] || "";
 
-    const isNumeric = !isNaN(valA) && !isNaN(valB);
-    if (isNumeric) {
-      return parseFloat(valA) - parseFloat(valB);
-    } else {
-      return valA.toString().localeCompare(valB.toString(), "fr", { sensitivity: "base" });
+    if (!isNaN(valA) && !isNaN(valB)) {
+      return parseFloat(valB) - parseFloat(valA); // Tri décroissant numérique
     }
+    return valA.localeCompare(valB); // Sinon tri alphabétique
   });
 
-  saveData(sorted);
-  buildTable(sorted);
+  afficherTableau(data);
 }
 
-function resetData() {
-  if (confirm("Confirmer la suppression de tous les participants ?")) {
-    localStorage.removeItem("eleves");
-    buildTable([]);
-  }
-}
-
-function searchTable() {
-  const searchValue = document.getElementById("searchInput").value.toLowerCase();
-  const data = getData();
-  const filtered = data.filter(eleve =>
+function filterTable() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const allData = JSON.parse(localStorage.getItem("eleves")) || [];
+  const filtered = allData.filter(eleve =>
     Object.values(eleve).some(val =>
-      (val || "").toString().toLowerCase().includes(searchValue)
+      (val || "").toLowerCase().includes(input)
     )
   );
-  buildTable(filtered);
+  afficherTableau(filtered);
 }
 
 function exportCSV() {
-  const data = getData();
-  if (data.length === 0) return;
+  const data = JSON.parse(localStorage.getItem("eleves")) || [];
+  if (data.length === 0) return alert("Aucune donnée à exporter.");
 
   const keys = Object.keys(data[0]);
-  const csv = [
-    keys.join(","),
-    ...data.map(row => keys.map(k => `"${row[k] || ""}"`).join(","))
-  ].join("\n");
+  const rows = [keys.join(",")];
 
-  const blob = new Blob([csv], { type: "text/csv" });
+  data.forEach(eleve => {
+    const row = keys.map(key => `"${eleve[key] || ""}"`).join(",");
+    rows.push(row);
+  });
+
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "participants.csv";
@@ -115,26 +100,40 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-function importCSV(event) {
+function handleCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = function(e) {
-    const lines = e.target.result.split("\n").filter(Boolean);
-    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
-    const data = lines.slice(1).map(line => {
-      const values = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+  reader.onload = function (e) {
+    const content = e.target.result;
+    const rows = content.split("\n").filter(row => row.trim() !== "");
+    const headers = rows[0].split(",").map(h => h.trim());
+    const data = rows.slice(1).map(row => {
+      const values = row.split(",");
       const obj = {};
-      headers.forEach((h, i) => obj[h] = values[i] || "");
+      headers.forEach((h, i) => {
+        obj[h] = values[i]?.trim();
+      });
       return obj;
     });
-    saveData(data);
-    buildTable(data);
+
+    localStorage.setItem("eleves", JSON.stringify(data));
+    alert("✅ Données CSV importées.");
+    afficherTableau(data);
   };
   reader.readAsText(file);
 }
 
-window.onload = function() {
-  buildTable(getData());
+function resetData() {
+  if (confirm("Êtes-vous sûr de vouloir tout réinitialiser ?")) {
+    localStorage.removeItem("eleves");
+    location.reload();
+  }
+}
+
+// Chargement initial
+window.onload = () => {
+  const data = JSON.parse(localStorage.getItem("eleves")) || [];
+  afficherTableau(data);
 };
