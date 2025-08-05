@@ -1,97 +1,71 @@
-function goHome() {
-  window.location.href = "index.html";
-}
+let eleves = JSON.parse(localStorage.getItem("eleves")) || [];
+let colonnes = [];
 
-function goZenos() {
-  window.location.href = "groupe-zenos.html";
-}
+function afficherTableau(filtre = "") {
+  const tableHead = document.getElementById("elevesTableHead");
+  const tableBody = document.getElementById("elevesTableBody");
 
-function afficherTableau(data) {
-  const tableHead = document.getElementById("tableHead");
-  const tbody = document.getElementById("elevesTableBody");
-  tableHead.innerHTML = "";
-  tbody.innerHTML = "";
-
-  if (data.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='100%'>Aucun participant enregistré.</td></tr>";
+  if (eleves.length === 0) {
+    tableHead.innerHTML = "";
+    tableBody.innerHTML = "<tr><td colspan='100%'>Aucun élève enregistré.</td></tr>";
     return;
   }
 
-  // Génère les entêtes de colonne dynamiquement
-  const keys = Object.keys(data[0]);
-  const headerRow = document.createElement("tr");
-  keys.forEach(key => {
-    const th = document.createElement("th");
-    th.textContent = key;
-    headerRow.appendChild(th);
-  });
-  tableHead.appendChild(headerRow);
+  colonnes = Object.keys(eleves[0]);
 
-  // Remplit le tableau
-  data.forEach(eleve => {
-    const row = document.createElement("tr");
-    keys.forEach(key => {
-      const td = document.createElement("td");
-      td.textContent = eleve[key] || "";
-      row.appendChild(td);
-    });
-    tbody.appendChild(row);
+  // En-têtes
+  tableHead.innerHTML = "<tr>" + colonnes.map(col => `<th>${col}</th>`).join("") + "</tr>";
+
+  // Lignes filtrées
+  const lignes = eleves.filter(eleve => {
+    return filtre === "" || Object.values(eleve).some(val => val.toLowerCase().includes(filtre.toLowerCase()));
   });
 
-  // Met à jour le menu déroulant pour le tri
-  const triSelect = document.getElementById("triSelect");
-  triSelect.innerHTML = "";
-  keys.forEach(key => {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = "Trier par " + key;
-    triSelect.appendChild(option);
-  });
+  tableBody.innerHTML = lignes.map(eleve => {
+    return "<tr>" + colonnes.map(col => `<td>${eleve[col] || ""}</td>`).join("") + "</tr>";
+  }).join("");
 }
 
-function applySort() {
-  const triKey = document.getElementById("triSelect").value;
-  const data = JSON.parse(localStorage.getItem("eleves")) || [];
-
-  if (!triKey) return;
-
-  data.sort((a, b) => {
-    const valA = a[triKey] || "";
-    const valB = b[triKey] || "";
-
-    if (!isNaN(valA) && !isNaN(valB)) {
-      return parseFloat(valB) - parseFloat(valA); // Tri décroissant numérique
-    }
-    return valA.localeCompare(valB); // Sinon tri alphabétique
-  });
-
-  afficherTableau(data);
+function remplirMenuTri() {
+  const select = document.getElementById("triSelect");
+  select.innerHTML = colonnes.map(c => `<option value="${c}">${c}</option>`).join("");
+  select.onchange = () => trierPar(select.value);
 }
 
-function filterTable() {
-  const input = document.getElementById("searchInput").value.toLowerCase();
-  const allData = JSON.parse(localStorage.getItem("eleves")) || [];
-  const filtered = allData.filter(eleve =>
-    Object.values(eleve).some(val =>
-      (val || "").toLowerCase().includes(input)
-    )
-  );
-  afficherTableau(filtered);
+function trierPar(cle) {
+  eleves.sort((a, b) => {
+    const valA = a[cle]?.toLowerCase?.() || a[cle];
+    const valB = b[cle]?.toLowerCase?.() || b[cle];
+
+    if (!isNaN(valA) && !isNaN(valB)) return parseFloat(valA) - parseFloat(valB);
+    return valA > valB ? 1 : valA < valB ? -1 : 0;
+  });
+  afficherTableau(document.getElementById("searchInput").value);
+}
+
+function filtrer() {
+  const texte = document.getElementById("searchInput").value;
+  afficherTableau(texte);
+}
+
+function resetData() {
+  if (confirm("❌ Réinitialiser tous les élèves ?")) {
+    localStorage.removeItem("eleves");
+    eleves = [];
+    afficherTableau();
+    remplirMenuTri();
+  }
 }
 
 function exportCSV() {
-  const data = JSON.parse(localStorage.getItem("eleves")) || [];
-  if (data.length === 0) return alert("Aucune donnée à exporter.");
+  if (eleves.length === 0) return;
 
-  const keys = Object.keys(data[0]);
-  const rows = [keys.join(",")];
-
-  data.forEach(eleve => {
-    const row = keys.map(key => `"${eleve[key] || ""}"`).join(",");
-    rows.push(row);
+  const lignes = [colonnes.join(",")];
+  eleves.forEach(eleve => {
+    lignes.push(colonnes.map(col => `"${eleve[col] || ""}"`).join(","));
   });
 
-  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const blob = new Blob([lignes.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -118,22 +92,24 @@ function handleCSV(event) {
       return obj;
     });
 
-    localStorage.setItem("eleves", JSON.stringify(data));
+    eleves = data;
+    localStorage.setItem("eleves", JSON.stringify(eleves));
+    afficherTableau();
+    remplirMenuTri();
     alert("✅ Données CSV importées.");
-    afficherTableau(data);
   };
   reader.readAsText(file);
 }
 
-function resetData() {
-  if (confirm("Êtes-vous sûr de vouloir tout réinitialiser ?")) {
-    localStorage.removeItem("eleves");
-    location.reload();
-  }
+function goHome() {
+  window.location.href = "index.html";
 }
 
-// Chargement initial
+function goZenos() {
+  window.location.href = "groupe-zenos.html";
+}
+
 window.onload = () => {
-  const data = JSON.parse(localStorage.getItem("eleves")) || [];
-  afficherTableau(data);
+  afficherTableau();
+  remplirMenuTri();
 };
