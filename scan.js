@@ -1,82 +1,31 @@
-// Initialisation du scanner
-const video = document.createElement("video");
-const canvasElement = document.createElement("canvas");
-const canvas = canvasElement.getContext("2d");
-let scanning = false;
+function startScanner() {
+  const qrRegion = document.getElementById("reader");
+  const resultDisplay = document.getElementById("scan-result");
+  if (!qrRegion) return;
 
-navigator.mediaDevices
-  .getUserMedia({ video: { facingMode: "environment" } })
-  .then(function(stream) {
-    scanning = true;
-    document.getElementById("scanner-container").appendChild(video);
-    video.setAttribute("playsinline", true);
-    video.srcObject = stream;
-    video.play();
-    requestAnimationFrame(tick);
-  });
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      html5QrCode.stop();
+      qrRegion.innerHTML = "";
+      resultDisplay.innerText = "";
 
-function tick() {
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    canvasElement.height = video.videoHeight;
-    canvasElement.width = video.videoWidth;
-    canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-
-    const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-
-    if (code) {
-      handleScan(code.data);
-    }
-  }
-
-  if (scanning) {
-    requestAnimationFrame(tick);
-  }
-}
-
-function handleScan(data) {
-  scanning = false;
-
-  // Arrête la caméra
-  video.srcObject.getTracks().forEach(track => track.stop());
-
-  let scannedData;
-  try {
-    scannedData = JSON.parse(data);
-  } catch (e) {
-    alert("QR code invalide !");
-    return;
-  }
-
-  // Récupérer les données déjà présentes
-  const existingData = JSON.parse(localStorage.getItem("participants") || "[]");
-
-  // Fusionner les nouvelles données (éviter les doublons)
-  const mergedData = [...existingData];
-
-  if (Array.isArray(scannedData)) {
-    scannedData.forEach(newEntry => {
-      if (!isDuplicate(existingData, newEntry)) {
-        mergedData.push(newEntry);
+      try {
+        const data = JSON.parse(decodedText);
+        const existing = JSON.parse(localStorage.getItem("eleves")) || [];
+        const newData = Array.isArray(data) ? data : [data];
+        const updated = [...existing, ...newData];
+        localStorage.setItem("eleves", JSON.stringify(updated));
+      } catch (e) {
+        alert("QR Code invalide ou format non pris en charge.");
       }
-    });
-  } else {
-    if (!isDuplicate(existingData, scannedData)) {
-      mergedData.push(scannedData);
-    }
-  }
 
-  // Sauvegarder dans localStorage
-  localStorage.setItem("participants", JSON.stringify(mergedData));
-
-  // Rediriger vers la page des participants
-  window.location.href = "participants.html";
-}
-
-function isDuplicate(dataArray, entry) {
-  return dataArray.some(e =>
-    e.Nom === entry.Nom &&
-    e.Prénom === entry.Prénom &&
-    e.Classe === entry.Classe
-  );
+      window.location.href = "participants.html";
+    },
+    (errorMessage) => {}
+  ).catch(err => {
+    qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
+  });
 }
