@@ -1,66 +1,80 @@
-function generateGroups() {
+function genererGroupesZenos() {
   const data = JSON.parse(localStorage.getItem("eleves")) || [];
-  if (!data.length || !data[0].VMA || !data[0].Classe) {
-    alert("Données incomplètes (VMA ou Classe manquante).");
+
+  const normalise = e => ({
+    Nom: e.Nom || e.nom || "",
+    Prénom: e.Prénom || e.prenom || "",
+    Classe: e.Classe || e.classe || "",
+    Sexe: e.Sexe || e.sexe || "",
+    VMA: parseFloat(e.VMA || e.vma || 0),
+    Distance: e.Distance || e.distance || ""
+  });
+
+  const eleves = data.map(normalise).filter(e => e.VMA && e.Classe);
+  if (eleves.length < 4) {
+    alert("Pas assez d'élèves valides avec VMA et Classe.");
     return;
   }
 
-  const classes = [...new Set(data.map(e => e.Classe))];
-  const groups = [];
+  const groupesParClasse = {};
+  eleves.sort((a, b) => a.VMA - b.VMA);
 
-  classes.forEach(classe => {
-    const eleves = data.filter(e => e.Classe === classe && e.VMA && e.Sexe);
-    eleves.sort((a, b) => parseFloat(b.VMA) - parseFloat(a.VMA));
-
-    while (eleves.length >= 4) {
-      const haut = eleves.shift();
-      const bas = eleves.pop();
-      const milieux = [eleves.shift(), eleves.pop()].filter(Boolean);
-      const groupe = [haut, ...milieux, bas];
-      groups.push({ classe, groupe });
-    }
-
-    if (eleves.length > 0) {
-      groups.push({ classe, groupe: eleves }); // restants non assignés
-    }
+  eleves.forEach(eleve => {
+    if (!groupesParClasse[eleve.Classe]) groupesParClasse[eleve.Classe] = [];
+    groupesParClasse[eleve.Classe].push(eleve);
   });
 
-  displayGroups(groups);
-}
+  const groupes = [];
+  const restants = [];
 
-function displayGroups(groups) {
-  const container = document.getElementById("groupsContainer");
+  for (const classe in groupesParClasse) {
+    const liste = groupesParClasse[classe];
+    while (liste.length >= 4) {
+      const bas = liste.shift();
+      const haut = liste.pop();
+      const moy1 = liste.shift();
+      const moy2 = liste.shift();
+      groupes.push([haut, bas, moy1, moy2].filter(Boolean));
+    }
+    restants.push(...liste);
+  }
+
+  const container = document.getElementById("groupesContainer");
   container.innerHTML = "";
 
-  groups.forEach((grp, i) => {
+  groupes.forEach((groupe, index) => {
     const div = document.createElement("div");
-    div.innerHTML = `<h3>Classe ${grp.classe} – Groupe ${i + 1}</h3><ul>` +
-      grp.groupe.map(e => `<li>${e.Nom} ${e.Prénom} – VMA: ${e.VMA} – Sexe: ${e.Sexe}</li>`).join("") +
-      "</ul><hr/>";
+    div.innerHTML = `<h3>Groupe ${index + 1}</h3><table><tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th></tr>` +
+      groupe.map(e => `<tr><td>${e.Nom}</td><td>${e.Prénom}</td><td>${e.Classe}</td><td>${e.Sexe}</td><td>${e.VMA}</td><td>${e.Distance}</td></tr>`).join("") +
+      "</table>";
     container.appendChild(div);
   });
+
+  if (restants.length) {
+    const div = document.createElement("div");
+    div.innerHTML = `<h3>Élèves restants</h3><table><tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th></tr>` +
+      restants.map(e => `<tr><td>${e.Nom}</td><td>${e.Prénom}</td><td>${e.Classe}</td><td>${e.Sexe}</td><td>${e.VMA}</td><td>${e.Distance}</td></tr>`).join("") +
+      "</table>";
+    container.appendChild(div);
+  }
 }
 
-function downloadCSV() {
-  const container = document.getElementById("groupsContainer");
-  if (!container.innerText.trim()) return alert("Aucun groupe généré.");
+function exportGroupesCSV() {
+  const tables = document.querySelectorAll("#groupesContainer table");
+  if (!tables.length) return alert("Aucun groupe généré.");
 
-  const lines = ["Classe,Groupe,Nom,Prénom,VMA,Sexe"];
-  const divs = container.querySelectorAll("div");
-
-  divs.forEach((div, index) => {
-    const groupe = div.querySelector("h3").innerText;
-    const items = div.querySelectorAll("li");
-    items.forEach(li => {
-      const parts = li.innerText.match(/(\\w+)\\s(\\w+).*VMA: ([\\d.]+).*Sexe: (\\w+)/);
-      if (parts) {
-        const [, nom, prenom, vma, sexe] = parts;
-        lines.push(`${groupe.split("–")[0].trim()},${groupe.split("–")[1].trim()},${nom},${prenom},${vma},${sexe}`);
-      }
+  let csv = "Nom,Prénom,Classe,Sexe,VMA,Distance\n";
+  tables.forEach(table => {
+    const rows = table.querySelectorAll("tr");
+    rows.forEach((row, i) => {
+      if (i === 0) return;
+      const cells = row.querySelectorAll("td");
+      const rowData = Array.from(cells).map(td => `"${td.innerText}"`).join(",");
+      csv += rowData + "\n";
     });
   });
 
-  const blob = new Blob([lines.join("\\n")], { type: "text/csv" });
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -69,12 +83,27 @@ function downloadCSV() {
   URL.revokeObjectURL(url);
 }
 
-function downloadPDF() {
-  window.print(); // impression PDF système
+function imprimerGroupes() {
+  window.print();
 }
 
-function sendZenosByEmail() {
-  const body = "Bonjour,%0D%0AVeuillez trouver les groupes ZENOS générés avec ScanProfs.%0D%0ACordialement.";
-  const mailto = `mailto:?subject=Groupes ZENOS ScanProfs&body=${body}`;
+function envoyerGroupesParMail() {
+  const tables = document.querySelectorAll("#groupesContainer table");
+  if (!tables.length) return alert("Aucun groupe généré.");
+
+  let body = "Bonjour,%0D%0AVoici les groupes ZENOS Tour :%0D%0A%0D%0A";
+  tables.forEach((table, i) => {
+    const rows = table.querySelectorAll("tr");
+    body += `Groupe ${i + 1}%0D%0A`;
+    rows.forEach((row, j) => {
+      if (j === 0) return;
+      const cells = row.querySelectorAll("td");
+      const line = Array.from(cells).map(td => td.innerText).join(" | ");
+      body += line + "%0D%0A";
+    });
+    body += "%0D%0A";
+  });
+
+  const mailto = `mailto:?subject=Groupes ZENOS Tour&body=${body}Cordialement.`;
   window.location.href = mailto;
 }
