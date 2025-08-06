@@ -1,45 +1,57 @@
 
 body {
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
+  font-family: Arial, sans-serif;
+  padding: 10px;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+h1 {
   text-align: center;
 }
 
-header, footer {
-  background-color: #f0f0f0;
-  padding: 1em;
-}
-
-main {
-  padding: 2em;
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  justify-content: center;
 }
 
 button {
-  margin: 0.5em;
-  padding: 1em 2em;
-  font-size: 1em;
+  padding: 10px;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
+  border-radius: 5px;
 }
 
-button.accueil {
-  background-color: #4CAF50;
-  color: white;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
 }
 
-button.tri {
-  background-color: #2196F3;
-  color: white;
+th, td {
+  border: 1px solid #999;
+  padding: 8px;
+  text-align: center;
 }
 
-button.reinit {
-  background-color: #f44336;
-  color: white;
+input[type="text"] {
+  padding: 8px;
+  margin-left: 10px;
+  border-radius: 5px;
 }
 
-button.aide {
-  background-color: #a974d1;
-  color: white;
+footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9em;
+  color: #666;
 }
+
+/* Couleurs boutons */
+.btn-green { background-color: #4CAF50; color: white; }
+.btn-red { background-color: #f44336; color: white; }
+.btn-blue { background-color: #2196F3; color: white; }
+.btn-purple { background-color: #9c27b0; color: white; }

@@ -1,115 +1,114 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const tableBody = document.getElementById("table-body");
-  const selectTri = document.getElementById("tri-select");
 
-  function afficherParticipants(participants) {
-    tableBody.innerHTML = "";
-    participants.forEach(e => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${e.Nom || ""}</td>
-        <td>${e.Prénom || e.Prenom || ""}</td>
-        <td>${e.Classe || ""}</td>
-        <td>${e.Sexe || ""}</td>
-        <td>${e.VMA || ""}</td>
-        <td>${e.Distance || ""}</td>
-        <td>${e.Vitesse || ""}</td>
-      `;
-      tableBody.appendChild(row);
+function loadTable() {
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
+  if (data.length === 0) return;
+
+  const table = document.getElementById("participantsTable");
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+
+  const headers = Object.keys(data[0]);
+  thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+
+  tbody.innerHTML = "";
+  data.forEach(entry => {
+    const row = document.createElement("tr");
+    headers.forEach(h => {
+      const cell = document.createElement("td");
+      cell.textContent = entry[h] || "";
+      row.appendChild(cell);
     });
-  }
+    tbody.appendChild(row);
+  });
+}
 
-  function getParticipants() {
-    return JSON.parse(localStorage.getItem("eleves") || "[]");
-  }
+function sortTable() {
+  const table = document.getElementById("participantsTable");
+  const header = table.querySelector("thead tr");
+  if (!header) return;
 
-  function saveParticipants(participants) {
-    localStorage.setItem("eleves", JSON.stringify(participants));
-  }
+  const key = prompt("Trier selon quelle colonne ? (ex: Nom, VMA)");
+  if (!key) return;
 
-  function trierParticipants(par) {
-    const participants = getParticipants();
-    if (!participants[0]?.hasOwnProperty(par)) return;
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
 
-    if (!isNaN(participants[0][par])) {
-      participants.sort((a, b) => parseFloat(b[par]) - parseFloat(a[par]));
-    } else {
-      participants.sort((a, b) => (a[par] || "").localeCompare(b[par] || ""));
-    }
-
-    afficherParticipants(participants);
-  }
-
-  document.getElementById("export-csv").onclick = () => {
-    const participants = getParticipants();
-    if (!participants.length) return;
-    const header = Object.keys(participants[0]);
-    const rows = [header.join(";")];
-    participants.forEach(p => {
-      rows.push(header.map(k => p[k] || "").join(";"));
-    });
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "participants.csv";
-    a.click();
-  };
-
-  document.getElementById("import-csv").addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const lines = e.target.result.split("\n");
-      const keys = lines[0].split(";");
-
-      const newParticipants = lines.slice(1).map(line => {
-        const values = line.split(";");
-        const obj = {};
-        keys.forEach((key, i) => obj[key] = values[i]);
-        return obj;
-      });
-
-      const existing = getParticipants();
-      const updated = [...existing, ...newParticipants];
-      saveParticipants(updated);
-      afficherParticipants(updated);
-    };
-    reader.readAsText(file);
+  data.sort((a, b) => {
+    const valA = a[key];
+    const valB = b[key];
+    const isNumeric = !isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB));
+    if (isNumeric) return parseFloat(valA) - parseFloat(valB);
+    return String(valA).localeCompare(String(valB));
   });
 
-  document.getElementById("reinit").onclick = () => {
-    if (confirm("Voulez-vous vraiment tout réinitialiser ?")) {
-      localStorage.removeItem("eleves");
-      tableBody.innerHTML = "";
-    }
-  };
+  localStorage.setItem("eleves", JSON.stringify(data));
+  loadTable();
+}
 
-  document.getElementById("print").onclick = () => window.print();
+function resetTable() {
+  if (confirm("Êtes-vous sûr de vouloir tout effacer ?")) {
+    localStorage.removeItem("eleves");
+    location.reload();
+  }
+}
 
-  document.getElementById("send-mail").onclick = () => {
-    const participants = getParticipants();
-    let body = "Bonjour, voici la liste des participants :\n\n";
-    participants.forEach(p => {
-      body += `${p.Prenom || p.Prénom} ${p.Nom} - ${p.Classe} - VMA : ${p.VMA}\n`;
+function filterTable() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const rows = document.querySelectorAll("#participantsTable tbody tr");
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(input) ? "" : "none";
+  });
+}
+
+function generateCSV() {
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
+  if (data.length === 0) return;
+
+  const headers = Object.keys(data[0]);
+  const csv = [headers.join(",")].concat(data.map(row =>
+    headers.map(h => `"${row[h] || ""}"`).join(",")
+  )).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "participants.csv";
+  a.click();
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.split("\n");
+    const headers = lines[0].split(",");
+    const data = lines.slice(1).filter(Boolean).map(line => {
+      const values = line.split(",");
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = values[i]?.replace(/"/g, ""));
+      return obj;
     });
-    const mailto = `mailto:?subject=Liste participants ScanProfs&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-  };
 
-  document.getElementById("search-input").addEventListener("input", function () {
-    const value = this.value.toLowerCase();
-    const participants = getParticipants().filter(p =>
-      Object.values(p).some(v => (v || "").toString().toLowerCase().includes(value))
-    );
-    afficherParticipants(participants);
+    const existing = JSON.parse(localStorage.getItem("eleves") || "[]");
+    const merged = [...existing, ...data];
+    localStorage.setItem("eleves", JSON.stringify(merged));
+    loadTable();
+  };
+  reader.readAsText(file);
+}
+
+function sendEmail() {
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
+  if (data.length === 0) return;
+
+  let body = "Bonjour,%0D%0AVoici la liste des participants scannés avec ScanProf :%0D%0A%0D%0A";
+  data.forEach(d => {
+    body += Object.values(d).join(" - ") + "%0D%0A";
   });
 
-  selectTri.addEventListener("change", () => trierParticipants(selectTri.value));
+  window.location.href = "mailto:?subject=Liste Participants ScanProf&body=" + body;
+}
 
-  // Initialisation
-  const data = getParticipants();
-  afficherParticipants(data);
-});
+window.onload = loadTable;

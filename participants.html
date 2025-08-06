@@ -1,30 +1,37 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Participants enregistrés</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header><h1>Participants enregistrés</h1></header>
-  <main>
-    <input type="text" id="searchInput" oninput="filterTable()" placeholder="🔍 Rechercher par mot-clé">
-    <select id="sortSelect"></select>
-    <button class="tri" onclick="sortTable()">Trier</button>
-    <button onclick="exportCSV()">📁 Exporter CSV</button>
-    <button onclick="importCSV()">📂 Réimporter CSV</button>
-    <button onclick="generatePDF()">🖨️ Imprimer</button>
-    <button onclick="sendByEmail()">✉️ Envoyer par mail</button>
-    <button id="zenosButton" class="zenos" onclick="window.location.href='groupe-zenos.html'">🧬 Groupes ZENOS Tour</button>
-    <button class="reset" onclick="resetData()">🗑️ Réinitialiser</button>
-    <button class="accueil" onclick="window.location.href='index.html'">🏠 Accueil</button>
-    <button class="aide" onclick="window.location.href='aide.html'">❓ Aide</button>
-    <table id="dataTable">
-      <thead></thead>
-      <tbody></tbody>
-    </table>
-  </main>
-  <footer>ScanProfs - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
-  <script src="scan.js"></script>
+  <h1>👥 Participants enregistrés</h1>
+
+  <div class="button-container">
+    <button class="btn-green" onclick="window.location.href='index.html'">🏠 Accueil</button>
+    <button class="btn-blue" onclick="sortTable()">🔃 Trier</button>
+    <button class="btn-red" onclick="resetTable()">🗑️ Réinitialiser</button>
+    <button onclick="generateCSV()">📤 Exporter CSV</button>
+    <input type="file" accept=".csv" onchange="importCSV(event)">
+    <button onclick="window.print()">🖨️ Imprimer</button>
+    <button onclick="sendEmail()">📧 Envoyer par mail</button>
+    <button onclick="window.location.href='groupe-zenos.html'">🧬 Groupe ZENOS Tour</button>
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher..." onkeyup="filterTable()" />
+    <button class="btn-purple" onclick="window.location.href='aide.html'">❓ Aide</button>
+  </div>
+
+  <table id="participantsTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>
+    <p>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</p>
+  </footer>
+
+  <script src="participants.js"></script>
 </body>
 </html>
