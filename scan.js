@@ -15,16 +15,33 @@ function startScanner() {
       try {
         const data = JSON.parse(decodedText);
         const existing = JSON.parse(localStorage.getItem("eleves")) || [];
-        const newData = Array.isArray(data) ? data : [data];
-        const updated = [...existing, ...newData];
-        localStorage.setItem("eleves", JSON.stringify(updated));
+        const newEntries = Array.isArray(data) ? data : [data];
+
+        // Ajouter chaque élève s’il n’est pas déjà présent
+        newEntries.forEach(entry => {
+          const isDuplicate = existing.some(e =>
+            e.Nom === entry.Nom &&
+            e.Prénom === entry.Prénom &&
+            e.Classe === entry.Classe
+          );
+          if (!isDuplicate) {
+            existing.push(entry);
+          }
+        });
+
+        // Sauvegarde finale
+        localStorage.setItem("eleves", JSON.stringify(existing));
+
+        // Redirection
+        window.location.href = "participants.html";
+
       } catch (e) {
         alert("QR Code invalide ou format non pris en charge.");
       }
-
-      window.location.href = "participants.html";
     },
-    (errorMessage) => {}
+    (errorMessage) => {
+      // Pas de message à chaque échec, on ignore
+    }
   ).catch(err => {
     qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
   });
