@@ -1,4 +1,3 @@
-
 function startScanner() {
   const qrRegion = document.getElementById("reader");
   const resultDisplay = document.getElementById("scan-result");
