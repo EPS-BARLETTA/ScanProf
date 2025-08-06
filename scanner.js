@@ -3,34 +3,46 @@ function startScanner() {
   if (!qrRegion) return;
 
   const html5QrCode = new Html5Qrcode("reader");
+
   html5QrCode.start(
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
-      try {
-        const data = JSON.parse(decodedText);
-        const existing = JSON.parse(localStorage.getItem("eleves")) || [];
-        const newData = Array.isArray(data) ? data : [data];
+      console.log("QR scanné :", decodedText);
 
-        const merged = [...existing];
-        newData.forEach(entry => {
-          if (!merged.some(e =>
-            e.Nom === entry.Nom &&
-            e.Prénom === entry.Prénom &&
-            e.Classe === entry.Classe
-          )) {
-            merged.push(entry);
-          }
-        });
+      // Stop et nettoyage de l'interface
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        qrRegion.innerHTML = "";
 
-        localStorage.setItem("eleves", JSON.stringify(merged));
-        alert("QR Code enregistré !");
-      } catch (e) {
-        alert("QR Code invalide ou format non pris en charge.");
-      }
+        try {
+          const data = JSON.parse(decodedText);
+          const existing = JSON.parse(localStorage.getItem("eleves")) || [];
+          const newData = Array.isArray(data) ? data : [data];
+
+          const updated = [...existing];
+          newData.forEach(entry => {
+            if (!updated.some(e =>
+              e.Nom === entry.Nom &&
+              e.Prénom === entry.Prénom &&
+              e.Classe === entry.Classe
+            )) {
+              updated.push(entry);
+            }
+          });
+
+          localStorage.setItem("eleves", JSON.stringify(updated));
+          alert("✅ QR Code enregistré !");
+        } catch (e) {
+          alert("⚠️ QR Code invalide ou mal formé.");
+        }
+      });
     },
-    (errorMessage) => {}
+    (errorMessage) => {
+      // Ne rien afficher sur erreur de scan silencieuse
+    }
   ).catch(err => {
     qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
+    console.error("Erreur démarrage scanner :", err);
   });
 }
