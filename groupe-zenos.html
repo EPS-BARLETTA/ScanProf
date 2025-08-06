@@ -1,1 +1,21 @@
-
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Groupes ZENOS Tour</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><h1>Groupes ZENOS Tour</h1></header>
+  <main>
+    <button onclick="generateGroups()">🔁 Générer les groupes</button>
+    <button onclick="downloadPDF()">🖨️ Télécharger PDF</button>
+    <button onclick="window.location.href='participants.html'">⬅️ Retour tableau</button>
+    <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+    <div id="groupsContainer"></div>
+  </main>
+  <footer>ScanProfs - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+  <script src="zenos.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Participants</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><h1>Participants enregistrés</h1></header>
+  <main>
+    <input type="text" id="searchInput" placeholder="🔍 Recherche..." oninput="filterTable()" />
+    <select id="sortSelect"></select>
+    <button onclick="sortTable()">Trier</button>
+    <button onclick="exportCSV()">📁 Exporter CSV</button>
+    <button onclick="importCSV()">📂 Réimporter CSV</button>
+    <button onclick="generatePDF()">🖨️ Imprimer PDF</button>
+    <button onclick="resetData()">♻️ Réinitialiser</button>
+    <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+    <button id="zenosButton" onclick="window.location.href='groupe-zenos.html'">🧬 Groupe ZENOS Tour</button>
+    <table id="dataTable"><thead></thead><tbody></tbody></table>
+  </main>
+  <footer>ScanProfs - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+  <script src="scan.js"></script>
+</body>
+</html>

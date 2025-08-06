@@ -1,1 +1,37 @@
 
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 0;
+}
+header, footer {
+  background: #003366;
+  color: white;
+  padding: 1em;
+  text-align: center;
+}
+main {
+  padding: 1em;
+}
+button {
+  margin: 0.5em;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+#zenosButton {
+  background-color: #ffcc00;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 0.6em;
+  text-align: left;
+}

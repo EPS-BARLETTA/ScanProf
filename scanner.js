@@ -1,0 +1,1 @@
+// TODO: Ajouter code du scanner QR code ici
