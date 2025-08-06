@@ -1,6 +1,5 @@
 function startScanner() {
   const qrRegion = document.getElementById("reader");
-  const resultDisplay = document.getElementById("scan-result");
   if (!qrRegion) return;
 
   const html5QrCode = new Html5Qrcode("reader");
@@ -8,21 +7,27 @@ function startScanner() {
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
-      html5QrCode.stop();
-      qrRegion.innerHTML = "";
-      resultDisplay.innerText = "";
-
       try {
         const data = JSON.parse(decodedText);
         const existing = JSON.parse(localStorage.getItem("eleves")) || [];
         const newData = Array.isArray(data) ? data : [data];
-        const updated = [...existing, ...newData];
-        localStorage.setItem("eleves", JSON.stringify(updated));
+
+        const merged = [...existing];
+        newData.forEach(entry => {
+          if (!merged.some(e =>
+            e.Nom === entry.Nom &&
+            e.Prénom === entry.Prénom &&
+            e.Classe === entry.Classe
+          )) {
+            merged.push(entry);
+          }
+        });
+
+        localStorage.setItem("eleves", JSON.stringify(merged));
+        alert("QR Code enregistré !");
       } catch (e) {
         alert("QR Code invalide ou format non pris en charge.");
       }
-
-      window.location.href = "participants.html";
     },
     (errorMessage) => {}
   ).catch(err => {
