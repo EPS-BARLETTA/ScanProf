@@ -1,1 +1,1 @@
-// TODO: Ajouter gestion tableau, import/export CSV, PDF, tri
+// TODO: à compléter avec logique de tableau, tri, CSV, PDF

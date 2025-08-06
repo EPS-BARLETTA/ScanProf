@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ScanProfs - Accueil</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
   <header><h1>📷 ScanProfs</h1></header>
   <main>
     <button onclick="startScanner()">Scanner des QR Codes</button>
+    <div id="reader" style="width: 300px; margin: 20px auto;"></div>
+    <p id="scan-result"></p>
     <button onclick="window.location.href='participants.html'">Voir les participants</button>
     <button onclick="window.location.href='groupe-zenos.html'">Groupes ZENOS Tour</button>
   </main>
