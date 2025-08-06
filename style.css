@@ -1,4 +1,3 @@
-
 body {
   font-family: Arial, sans-serif;
   background: #f4f4f4;
@@ -24,4 +23,14 @@ button {
 }
 #zenosButton {
   background-color: #ffcc00;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 0.6em;
+  text-align: left;
 }
