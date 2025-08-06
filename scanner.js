@@ -1,4 +1,3 @@
-
 function startScanner() {
   const qrRegion = document.getElementById("reader");
   if (!qrRegion) return;
@@ -9,40 +8,47 @@ function startScanner() {
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
-      html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        qrRegion.innerHTML = "";
+      html5QrCode.stop();
+      qrRegion.innerHTML = "";
 
-        try {
-          const data = JSON.parse(decodedText);
-          const existing = JSON.parse(localStorage.getItem("eleves")) || [];
-          const newData = Array.isArray(data) ? data : [data];
+      let data;
+      try {
+        data = JSON.parse(decodedText);
+      } catch (e) {
+        alert("QR Code invalide.");
+        return;
+      }
 
-          const updated = [...existing];
-          newData.forEach(entry => {
-            if (!updated.some(e =>
-              e.Nom === entry.Nom &&
-              e.Prénom === entry.Prénom &&
-              e.Classe === entry.Classe
-            )) {
-              updated.push(entry);
-            }
-          });
+      const newEntries = Array.isArray(data) ? data : [data];
+      const existingEntries = JSON.parse(localStorage.getItem("eleves")) || [];
 
-          localStorage.setItem("eleves", JSON.stringify(updated));
-          alert("✅ QR Code enregistré !");
+      const merged = [...existingEntries];
 
-          // Redirection vers participants après 2 secondes
-          setTimeout(() => {
-            window.location.href = "participants.html";
-          }, 2000);
-
-        } catch (e) {
-          alert("⚠️ QR Code invalide ou mal formé.");
+      newEntries.forEach(newEntry => {
+        const isDuplicate = existingEntries.some(e =>
+          e.Nom === newEntry.Nom &&
+          e.Prénom === newEntry.Prénom &&
+          e.Classe === newEntry.Classe
+        );
+        if (!isDuplicate) {
+          merged.push(newEntry);
         }
       });
+
+      localStorage.setItem("eleves", JSON.stringify(merged));
+
+      // Redirige après 2 secondes avec message
+      const resultDisplay = document.getElementById("scan-result");
+      if (resultDisplay) {
+        resultDisplay.innerText = "QR Code enregistré ✅";
+        setTimeout(() => {
+          window.location.href = "participants.html";
+        }, 2000);
+      } else {
+        window.location.href = "participants.html";
+      }
     },
-    (_) => {}
+    (errorMessage) => {}
   ).catch(err => {
     qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
   });
