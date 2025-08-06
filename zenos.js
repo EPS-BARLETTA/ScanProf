@@ -1,1 +1,1 @@
-// Code complet du zenos.js ici (déjà validé précédemment)
+// Code zenos.js ici
