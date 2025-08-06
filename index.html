@@ -1,17 +1,21 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>ScanProfs - Accueil</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ScanProf - Accueil</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header><h1>📷 ScanProfs</h1></header>
-  <main>
-    <button onclick="window.location.href='scan.html'">📷 Scanner un QR code</button>
+  <h1>ScanProf</h1>
+  <div class="button-container">
+    <button onclick="startScanner()">📷 Scanner un QR Code</button>
     <button onclick="window.location.href='participants.html'">👥 Voir les participants</button>
-    <button class="aide" onclick="window.location.href='aide.html'">❓ Aide</button>
-  </main>
-  <footer>ScanProfs - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+    <button onclick="window.location.href='aide.html'">❓ Aide</button>
+  </div>
+  <div id="reader" style="width: 100%; max-width: 400px; margin: auto;"></div>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="scanner.js"></script>
 </body>
 </html>

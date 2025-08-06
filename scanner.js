@@ -1,3 +1,4 @@
+
 function startScanner() {
   const qrRegion = document.getElementById("reader");
   if (!qrRegion) return;
@@ -8,9 +9,6 @@ function startScanner() {
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
-      console.log("QR scanné :", decodedText);
-
-      // Stop et nettoyage de l'interface
       html5QrCode.stop().then(() => {
         html5QrCode.clear();
         qrRegion.innerHTML = "";
@@ -33,16 +31,19 @@ function startScanner() {
 
           localStorage.setItem("eleves", JSON.stringify(updated));
           alert("✅ QR Code enregistré !");
+
+          // Redirection vers participants après 2 secondes
+          setTimeout(() => {
+            window.location.href = "participants.html";
+          }, 2000);
+
         } catch (e) {
           alert("⚠️ QR Code invalide ou mal formé.");
         }
       });
     },
-    (errorMessage) => {
-      // Ne rien afficher sur erreur de scan silencieuse
-    }
+    (_) => {}
   ).catch(err => {
     qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
-    console.error("Erreur démarrage scanner :", err);
   });
 }
