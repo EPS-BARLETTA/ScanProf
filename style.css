@@ -4,15 +4,18 @@ body {
   margin: 0;
   padding: 0;
 }
+
 header, footer {
   background: #003366;
   color: white;
   padding: 1em;
   text-align: center;
 }
+
 main {
   padding: 1em;
 }
+
 button {
   margin: 0.5em;
   padding: 0.6em 1.2em;
@@ -21,9 +24,24 @@ button {
   border: none;
   cursor: pointer;
 }
+
+/* Couleurs spécifiques des boutons */
 #zenosButton {
   background-color: #ffcc00;
 }
+button.accueil {
+  background-color: #4CAF50;
+  color: white;
+}
+button.tri {
+  background-color: #2196F3;
+  color: white;
+}
+button.reset {
+  background-color: #f44336;
+  color: white;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
