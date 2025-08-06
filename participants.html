@@ -2,24 +2,26 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Participants</title>
+  <title>Participants enregistrés</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header><h1>Participants enregistrés</h1></header>
   <main>
-    <input type="text" id="searchInput" placeholder="🔍 Recherche..." oninput="filterTable()" />
+    <input type="text" id="searchInput" oninput="filterTable()" placeholder="🔍 Rechercher par mot-clé">
     <select id="sortSelect"></select>
-    <button onclick="sortTable()">Trier</button>
+    <button class="tri" onclick="sortTable()">Trier</button>
     <button onclick="exportCSV()">📁 Exporter CSV</button>
     <button onclick="importCSV()">📂 Réimporter CSV</button>
-    <button onclick="generatePDF()">🖨️ Imprimer PDF</button>
+    <button onclick="generatePDF()">🖨️ Imprimer</button>
     <button onclick="sendByEmail()">✉️ Envoyer par mail</button>
-    <button onclick="resetData()">♻️ Réinitialiser</button>
-    <button onclick="window.location.href='index.html'">🏠 Accueil</button>
-    <button id="zenosButton" onclick="window.location.href='groupe-zenos.html'">🧬 Groupe ZENOS Tour</button>
-    <table id="dataTable"><thead></thead><tbody></tbody></table>
+    <button id="zenosButton" onclick="window.location.href='groupe-zenos.html'">🧬 Groupes ZENOS Tour</button>
+    <button class="reset" onclick="resetData()">🗑️ Réinitialiser</button>
+    <button class="accueil" onclick="window.location.href='index.html'">🏠 Accueil</button>
+    <table id="dataTable">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
   </main>
   <footer>ScanProfs - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
   <script src="scan.js"></script>
