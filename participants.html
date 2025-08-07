@@ -1,23 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Participants</title>
-  <script src="participants.js"></script>
+  <title>Participants enregistrés</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Participants enregistrés</h1>
-  <select id="tri-select"></select>
-  <button onclick="trierParticipants()">🔵 Trier</button>
-  <button onclick="exportCSV()">📁 Exporter CSV</button>
-  <button onclick="imprimer()">🖨️ Imprimer</button>
-  <button onclick="envoyerMail()">📧 Envoyer par mail</button>
-  <button onclick="reimporterCSV()">📂 Réimporter CSV</button>
-  <button onclick="reinitialiser()" class="danger">🔴 Réinitialiser</button>
-  <button onclick="location.href='groupe-zenos.html'">🧬 Groupe ZENOS Tour</button>
-  <button class="accueil" onclick="location.href='index.html'">🏠 Accueil</button>
-  <table id="participants-table"></table>
+  <h1>👥 Participants enregistrés</h1>
+
+  <div style="text-align: center; margin-bottom: 20px;">
+    <select id="triSelect" class="btn">
+      <option value="">-- Trier par --</option>
+    </select>
+    <button onclick="trierTableau()" class="btn blue">🔃 Trier</button>
+    <button onclick="reinitialiser()" class="btn red">♻️ Réinitialiser</button>
+    <button onclick="exportCSV()" class="btn">📄 Exporter CSV</button>
+    <button onclick="imprimer()" class="btn">🖨️ Imprimer</button>
+    <button onclick="envoyerMail()" class="btn">✉️ Envoyer par mail</button>
+    <button onclick="document.getElementById('csvInput').click()" class="btn">📥 Réimporter CSV</button>
+    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(event)">
+  </div>
+
+  <table id="participantsTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <button onclick="window.location.href='groupe-zenos.html'" class="btn yellow">🧬 Groupe ZENOS Tour</button>
+    <button onclick="window.location.href='index.html'" class="btn green">🏠 Accueil</button>
+    <button onclick="window.location.href='aide.html'" class="btn purple">❓ Aide</button>
+  </div>
+
   <footer>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+
+  <script src="participants.js"></script>
 </body>
 </html>
