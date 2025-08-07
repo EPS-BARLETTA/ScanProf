@@ -8,10 +8,6 @@ function startScanner() {
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
-      html5QrCode.stop();
-      qrRegion.innerHTML = "";
-      resultDisplay.innerText = "QR Code enregistré ✅";
-
       try {
         const data = JSON.parse(decodedText);
         const existing = JSON.parse(localStorage.getItem("eleves")) || [];
@@ -25,14 +21,18 @@ function startScanner() {
         });
 
         localStorage.setItem("eleves", JSON.stringify(existing));
-      } catch (e) {
-        alert("QR Code invalide ou format non pris en charge.");
-      }
 
-      // Redirige après 1s
-      setTimeout(() => {
-        window.location.href = "participants.html";
-      }, 1000);
+        resultDisplay.innerText = "✅ QR Code enregistré. Vous pouvez scanner un autre QR Code.";
+        setTimeout(() => {
+          resultDisplay.innerText = "";
+        }, 2000);
+
+      } catch (e) {
+        resultDisplay.innerText = "❌ QR Code invalide.";
+        setTimeout(() => {
+          resultDisplay.innerText = "";
+        }, 2000);
+      }
     },
     (errorMessage) => {
       // Ignorer les erreurs
