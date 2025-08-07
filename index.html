@@ -1,16 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Accueil</title>
+  <title>ScanProf</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>ScanProf</h1>
-  <button onclick="location.href='scanner.html'">📷 Scanner</button>
-  <button onclick="location.href='participants.html'">👥 Participants</button>
-  <button onclick="location.href='groupe-zenos.html'">🧬 Groupes ZENOS Tour</button>
-  <button class="aide" onclick="location.href='aide.html'">❓ Aide</button>
-  <footer>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+  <div class="container accueil">
+    <h1>📚 ScanProf</h1>
+
+    <div class="button-group">
+      <a href="scanner.html" class="button blue">📷 Scanner des QR Codes</a>
+      <a href="participants.html" class="button green">👥 Participants enregistrés</a>
+      <a href="groupe-zenos.html" class="button yellow">🧬 Groupes ZENOS Tour</a>
+      <a href="aide.html" class="button purple">❓ Aide</a>
+    </div>
+  </div>
 </body>
 </html>
