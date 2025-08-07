@@ -3,37 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <title>Participants enregistrés</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <script src="participants.js" defer></script>
 </head>
 <body>
-  <h1>👥 Participants enregistrés</h1>
+  <div class="container">
+    <h1>👥 Participants enregistrés</h1>
 
-  <div style="text-align: center; margin-bottom: 20px;">
-    <select id="triSelect" class="btn">
-      <option value="">-- Trier par --</option>
-    </select>
-    <button onclick="trierTableau()" class="btn blue">🔃 Trier</button>
-    <button onclick="reinitialiser()" class="btn red">♻️ Réinitialiser</button>
-    <button onclick="exportCSV()" class="btn">📄 Exporter CSV</button>
-    <button onclick="imprimer()" class="btn">🖨️ Imprimer</button>
-    <button onclick="envoyerMail()" class="btn">✉️ Envoyer par mail</button>
-    <button onclick="document.getElementById('csvInput').click()" class="btn">📥 Réimporter CSV</button>
-    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(event)">
+    <div class="actions">
+      <label for="tri">Trier par :</label>
+      <select id="tri">
+        <!-- Options générées dynamiquement -->
+      </select>
+      <button class="button blue" onclick="trier()">Trier</button>
+      <button class="button red" onclick="reinitialiser()">🔄 Réinitialiser</button>
+    </div>
+
+    <div class="actions">
+      <button class="button" onclick="exporterCSV()">📥 Exporter CSV</button>
+      <button class="button" onclick="importerCSV()">📤 Réimporter CSV</button>
+      <input type="file" id="fileInput" style="display:none" onchange="chargerCSV(event)">
+      <button class="button" onclick="window.print()">🖨️ Imprimer</button>
+      <button class="button" onclick="envoyerParMail()">✉️ Envoyer par mail</button>
+    </div>
+
+    <div id="tableau-participants" class="table-wrapper"></div>
+
+    <div class="actions">
+      <a href="groupe-zenos.html" class="button yellow">🧬 Groupes ZENOS Tour</a>
+      <a href="index.html" class="button green">🏠 Accueil</a>
+      <a href="aide.html" class="button purple">❓ Aide</a>
+    </div>
   </div>
 
-  <table id="participantsTable">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
-
-  <div style="text-align: center; margin-top: 20px;">
-    <button onclick="window.location.href='groupe-zenos.html'" class="btn yellow">🧬 Groupe ZENOS Tour</button>
-    <button onclick="window.location.href='index.html'" class="btn green">🏠 Accueil</button>
-    <button onclick="window.location.href='aide.html'" class="btn purple">❓ Aide</button>
-  </div>
-
-  <footer>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
-
-  <script src="participants.js"></script>
+  <footer>
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+  </footer>
 </body>
 </html>
