@@ -1,20 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Groupes ZENOS</title>
-  <script src="zenos.js"></script>
+  <title>Groupes ZENOS Tour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <script src="zenos.js" defer></script>
 </head>
 <body>
-  <h1>Groupes ZENOS Tour</h1>
-  <button onclick="genererGroupes()">🧬 Générer les groupes ZENOS</button>
-  <button onclick="exporterCSVGroupes()">📁 Exporter CSV</button>
-  <button onclick="exporterPDFGroupes()">🖨️ PDF</button>
-  <button onclick="envoyerMailGroupes()">📧 Mail</button>
-  <button onclick="location.href='participants.html'">Retour au tableau</button>
-  <button class="accueil" onclick="location.href='index.html'">🏠 Accueil</button>
-  <div id="groupes-zenos"></div>
-  <footer>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+  <div class="container">
+    <h1>🧬 Groupes ZENOS Tour</h1>
+
+    <div class="actions">
+      <button class="button yellow" onclick="genererGroupes()">🎲 Générer les groupes ZENOS</button>
+      <button class="button" onclick="exporterGroupesCSV()">📥 Télécharger CSV</button>
+      <button class="button" onclick="imprimerGroupes()">🖨️ Imprimer</button>
+      <button class="button" onclick="envoyerGroupesParMail()">✉️ Envoyer par mail</button>
+      <button class="button" onclick="afficherEquilibre()">📊 Afficher l'équilibre des groupes</button>
+    </div>
+
+    <div id="groupes-output"></div>
+    <div id="graphique" style="margin-top: 30px;"></div>
+
+    <div class="actions">
+      <a href="participants.html" class="button">↩️ Retour au tableau</a>
+      <a href="index.html" class="button green">🏠 Accueil</a>
+      <a href="aide.html" class="button purple">❓ Aide</a>
+    </div>
+  </div>
+
+  <footer>
+    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+  </footer>
 </body>
 </html>
