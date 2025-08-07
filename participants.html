@@ -1,1 +1,23 @@
-<!-- PARTICIPANTS -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Participants</title>
+  <script src="participants.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Participants enregistrés</h1>
+  <select id="tri-select"></select>
+  <button onclick="trierParticipants()">🔵 Trier</button>
+  <button onclick="exportCSV()">📁 Exporter CSV</button>
+  <button onclick="imprimer()">🖨️ Imprimer</button>
+  <button onclick="envoyerMail()">📧 Envoyer par mail</button>
+  <button onclick="reimporterCSV()">📂 Réimporter CSV</button>
+  <button onclick="reinitialiser()" class="danger">🔴 Réinitialiser</button>
+  <button onclick="location.href='groupe-zenos.html'">🧬 Groupe ZENOS Tour</button>
+  <button class="accueil" onclick="location.href='index.html'">🏠 Accueil</button>
+  <table id="participants-table"></table>
+  <footer>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+</body>
+</html>

@@ -1,1 +1,1 @@
-// scanner JS
+// Code JS du scanner QR ici
