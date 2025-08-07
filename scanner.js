@@ -13,33 +13,43 @@ function startScanner() {
         const existing = JSON.parse(localStorage.getItem("eleves")) || [];
         const newData = Array.isArray(data) ? data : [data];
 
-        // Ajouter sans doublons
+        const updated = [...existing];
+
         newData.forEach(entry => {
-          if (!existing.some(e => e.nom === entry.nom && e.prenom === entry.prenom && e.classe === entry.classe)) {
-            existing.push(entry);
+          if (!isDuplicate(existing, entry)) {
+            updated.push(entry);
           }
         });
 
-        localStorage.setItem("eleves", JSON.stringify(existing));
-
-        resultDisplay.innerText = "✅ QR Code enregistré. Vous pouvez scanner un autre QR Code.";
-        setTimeout(() => {
-          resultDisplay.innerText = "";
-        }, 2000);
+        localStorage.setItem("eleves", JSON.stringify(updated));
+        resultDisplay.innerText = "✅ QR Code enregistré. Vous pouvez scanner un autre.";
 
       } catch (e) {
-        resultDisplay.innerText = "❌ QR Code invalide.";
-        setTimeout(() => {
-          resultDisplay.innerText = "";
-        }, 2000);
+        resultDisplay.innerText = "❌ QR Code invalide ou format non pris en charge.";
       }
+
+      // Redémarrer le scan automatiquement après 1.5 secondes
+      setTimeout(() => {
+        resultDisplay.innerText = "";
+        html5QrCode.stop().then(() => {
+          startScanner(); // relancer le scan
+        });
+      }, 1500);
     },
     (errorMessage) => {
-      // Ignorer les erreurs
+      // Pas d'affichage d'erreur à chaque scan échoué
     }
   ).catch(err => {
     qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
   });
+}
+
+function isDuplicate(dataArray, entry) {
+  return dataArray.some(e =>
+    e.nom === entry.nom &&
+    e.prenom === entry.prenom &&
+    e.classe === entry.classe
+  );
 }
 
 window.onload = startScanner;
