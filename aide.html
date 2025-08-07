@@ -1,55 +1,69 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Aide - ScanProf</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>❓ Aide ScanProf</h1>
+  <header>
+    <h1>❓ Aide - Utilisation de ScanProf</h1>
+  </header>
 
-    <h2>📌 Fonctionnement général</h2>
-    <p><strong>ScanProf</strong> est une application permettant de scanner des QR codes d’élèves générés via des applications comme <strong>RunStats</strong>, puis de trier, visualiser et utiliser ces données pour le suivi en EPS ou les événements comme le ZENOS Tour.</p>
+  <main>
+    <section>
+      <h2>📋 Accueil</h2>
+      <p>Depuis l’accueil, vous pouvez :</p>
+      <ul>
+        <li><strong>Scanner</strong> des QR codes générés par <em>RunStats</em> pour ajouter des élèves.</li>
+        <li><strong>Voir les participants</strong> enregistrés dans un tableau dynamique.</li>
+        <li><strong>Créer les groupes ZENOS Tour</strong> (par classe, mixité, VMA).</li>
+      </ul>
+    </section>
 
-    <h2>📷 Scanner un QR code</h2>
-    <ul>
-      <li>Cliquez sur "Scanner un QR Code" depuis l'accueil.</li>
-      <li>Autorisez l’accès à la caméra.</li>
-      <li>Après chaque scan valide, l’élève est ajouté à la liste des participants.</li>
-      <li>Vous pouvez scanner plusieurs QR codes à la suite.</li>
-    </ul>
+    <section>
+      <h2>📷 Scanner un QR Code</h2>
+      <p>Cliquez sur "Scanner" et placez un QR code devant la caméra. Si le code est valide, il est ajouté au tableau. Vous pouvez en scanner plusieurs à la suite.</p>
+    </section>
 
-    <h2>👥 Participants enregistrés</h2>
-    <p>Cette page affiche tous les élèves scannés :</p>
-    <ul>
-      <li><strong>Trier par :</strong> choisissez un critère (Nom, VMA, etc.) pour trier dynamiquement.</li>
-      <li><strong>Exporter CSV :</strong> télécharge un fichier CSV local.</li>
-      <li><strong>Réimporter CSV :</strong> permet de réimporter un fichier sauvegardé.</li>
-      <li><strong>Imprimer :</strong> imprime directement la liste des élèves triés.</li>
-      <li><strong>Envoyer par mail :</strong> ouvre votre boîte mail avec le tableau prêt à l'envoi.</li>
-    </ul>
+    <section>
+      <h2>👥 Participants enregistrés</h2>
+      <p>Cette page contient :</p>
+      <ul>
+        <li>Un tableau dynamique avec les élèves enregistrés</li>
+        <li>Un menu déroulant pour <strong>trier</strong> par nom, prénom, classe, sexe, distance, vitesse, VMA</li>
+        <li>Des boutons pour :
+          <ul>
+            <li><strong>Exporter CSV</strong></li>
+            <li><strong>Réimporter CSV</strong> (ancien fichier)</li>
+            <li><strong>Imprimer</strong></li>
+            <li><strong>Envoyer par mail</strong></li>
+            <li><strong>Réinitialiser</strong> (efface tous les participants)</li>
+            <li><strong>Aller à ZENOS Tour</strong></li>
+          </ul>
+        </li>
+      </ul>
+    </section>
 
-    <h2>🧬 Groupes ZENOS Tour</h2>
-    <p>Cette page génère des groupes mixtes de 4 élèves avec des niveaux de VMA équilibrés :</p>
-    <ul>
-      <li>1 élève avec VMA haute, 2 élèves avec VMA moyenne, 1 avec VMA basse.</li>
-      <li>Chaque groupe est présenté dans un tableau séparé.</li>
-      <li>Les élèves restants sont listés en bas avec un message explicatif.</li>
-      <li>Export CSV, PDF, mail, impression disponibles.</li>
-    </ul>
-
-    <h2>🔁 Réinitialiser</h2>
-    <p>Supprime toutes les données enregistrées et vide le tableau des participants.</p>
-
-    <div class="actions">
-      <a href="index.html" class="button green">🏠 Retour à l'accueil</a>
-    </div>
-  </div>
+    <section>
+      <h2>🏃‍♂️ Groupes ZENOS Tour</h2>
+      <p>Cette page génère automatiquement des groupes de 4 élèves équilibrés (VMA haute, basse, 2 moyennes) et mixtes, par classe.</p>
+      <p>Fonctions disponibles :</p>
+      <ul>
+        <li><strong>Générer</strong> les groupes</li>
+        <li><strong>Exporter CSV</strong></li>
+        <li><strong>Imprimer</strong></li>
+        <li><strong>Envoyer par mail</strong></li>
+        <li><strong>Retour au tableau</strong></li>
+        <li><strong>Retour à l'accueil</strong></li>
+      </ul>
+    </section>
+  </main>
 
   <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    <p>ScanProf – Équipe EPS Lycée Vauban – LUXEMBOURG – JB</p>
+    <button onclick="window.location.href='index.html'" class="btn-accueil">🏠 Retour à l'accueil</button>
   </footer>
 </body>
 </html>
