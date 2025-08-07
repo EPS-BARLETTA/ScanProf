@@ -22,22 +22,33 @@ function startScanner() {
       const newEntries = Array.isArray(data) ? data : [data];
       const existingEntries = JSON.parse(localStorage.getItem("eleves")) || [];
 
+      // 🔁 Conversion des clés minuscules → format attendu
+      const formatKeys = (entry) => ({
+        Nom: entry.nom || entry.Nom || "",
+        Prénom: entry.prenom || entry.Prénom || "",
+        Classe: entry.classe || entry.Classe || "",
+        Sexe: entry.sexe || entry.Sexe || "",
+        Distance: entry.distance || entry.Distance || "",
+        Vitesse: entry.vitesse || entry.Vitesse || "",
+        VMA: entry.vma || entry.VMA || ""
+      });
+
       const merged = [...existingEntries];
 
-      newEntries.forEach(newEntry => {
+      newEntries.forEach(raw => {
+        const entry = formatKeys(raw);
         const isDuplicate = existingEntries.some(e =>
-          e.Nom === newEntry.Nom &&
-          e.Prénom === newEntry.Prénom &&
-          e.Classe === newEntry.Classe
+          e.Nom === entry.Nom &&
+          e.Prénom === entry.Prénom &&
+          e.Classe === entry.Classe
         );
         if (!isDuplicate) {
-          merged.push(newEntry);
+          merged.push(entry);
         }
       });
 
       localStorage.setItem("eleves", JSON.stringify(merged));
 
-      // Redirige après 2 secondes avec message
       const resultDisplay = document.getElementById("scan-result");
       if (resultDisplay) {
         resultDisplay.innerText = "QR Code enregistré ✅";
