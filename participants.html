@@ -5,40 +5,75 @@
   <title>Participants enregistrés</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <style>
+    .wrap {
+      min-height: 100vh; display: grid; grid-template-rows: 1fr auto;
+    }
+    .main {
+      max-width: 1100px; margin: 0 auto; padding: 16px;
+    }
+    .actions {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center;
+      margin: 6px 0 10px;
+    }
+    .button { padding: 10px 14px; border-radius: 8px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; }
+    .blue { background:#1e90ff; color:#fff; }
+    .red { background:#dc3545; color:#fff; }
+    .green { background:#28a745; color:#fff; }
+    .yellow { background:#ffcc00; color:#222; }
+    .purple { background:#8e44ad; color:#fff; }
+    .table-wrapper { background:#fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); padding: 12px; overflow-x: auto; }
+    table { width:100%; border-collapse: collapse; min-width: 720px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    thead th { background:#f0f7ff; }
+    tbody tr.pair { background:#ffffff; }
+    tbody tr.impair { background:#eaf6ff; }
+    footer { background:#1e90ff; color:#fff; text-align:center; padding:10px 12px; }
+  </style>
   <script src="participants.js" defer></script>
 </head>
 <body>
-  <div class="container">
-    <h1>👥 Participants enregistrés</h1>
+  <div class="wrap">
+    <main class="main">
+      <h1 style="text-align:center; margin:6px 0 10px;">👥 Participants enregistrés</h1>
 
-    <div class="actions">
-      <label for="tri">Trier par :</label>
-      <select id="tri">
-        <!-- Options générées dynamiquement -->
-      </select>
-      <button class="button blue" onclick="trier()">Trier</button>
-      <button class="button red" onclick="reinitialiser()">🔄 Réinitialiser</button>
-    </div>
+      <div class="actions">
+        <label for="tri-select">Trier par :</label>
+        <select id="tri-select"></select>
+        <button class="button blue" onclick="trierParticipants()">🔃 Trier</button>
+        <button class="button red" onclick="resetData()">♻️ Réinitialiser</button>
+      </div>
 
-    <div class="actions">
-      <button class="button" onclick="exporterCSV()">📥 Exporter CSV</button>
-      <button class="button" onclick="importerCSV()">📤 Réimporter CSV</button>
-      <input type="file" id="fileInput" style="display:none" onchange="chargerCSV(event)">
-      <button class="button" onclick="window.print()">🖨️ Imprimer</button>
-      <button class="button" onclick="envoyerParMail()">✉️ Envoyer par mail</button>
-    </div>
+      <div class="actions">
+        <button class="button" onclick="exporterCSV()">📥 Exporter CSV</button>
+        <button class="button" onclick="document.getElementById('csv-input').click()">📤 Réimporter CSV</button>
+        <input id="csv-input" type="file" accept=".csv" style="display:none" onchange="importerCSV(event)">
+        <button class="button" onclick="imprimerTableau()">🖨️ Imprimer</button>
+        <button class="button" onclick="envoyerParMail()">✉️ Envoyer par mail</button>
+      </div>
 
-    <div id="tableau-participants" class="table-wrapper"></div>
+      <div class="table-wrapper">
+        <table id="participants-table">
+          <thead id="table-head">
+            <tr>
+              <th>nom</th><th>prenom</th><th>classe</th><th>sexe</th>
+              <th>distance</th><th>vitesse</th><th>vma</th>
+            </tr>
+          </thead>
+          <tbody id="participants-body"></tbody>
+        </table>
+      </div>
 
-    <div class="actions">
-      <a href="groupe-zenos.html" class="button yellow">🧬 Groupes ZENOS Tour</a>
-      <a href="index.html" class="button green">🏠 Accueil</a>
-      <a href="aide.html" class="button purple">❓ Aide</a>
-    </div>
+      <div class="actions" style="margin-top:12px;">
+        <a href="groupe-zenos.html" class="button yellow">🧬 Groupes ZENOS Tour</a>
+        <a href="index.html" class="button green">🏠 Accueil</a>
+        <a href="aide.html" class="button purple">❓ Aide</a>
+      </div>
+    </main>
+
+    <footer>
+      ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    </footer>
   </div>
-
-  <footer>
-    ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
-  </footer>
 </body>
 </html>
