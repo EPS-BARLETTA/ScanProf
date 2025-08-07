@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Scanner</title>
-  <script src="scanner.js"></script>
+  <title>Scanner un QR Code</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="scanner.js" defer></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Scanner un QR Code</h1>
-  <div id="reader"></div>
-  <p id="scan-result"></p>
+  <h1>📷 Scanner des QR Codes</h1>
+  <div id="reader" style="width: 300px; margin: auto;"></div>
+  <p id="scan-result" style="text-align: center;"></p>
   <footer>ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
 </body>
 </html>
