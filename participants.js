@@ -1,116 +1,145 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const tableBody = document.querySelector("#table-body");
-  const triSelect = document.getElementById("tri");
-  const btnTrier = document.getElementById("btn-trier");
-  const btnReset = document.getElementById("btn-reset");
-  const btnExport = document.getElementById("btn-export");
-  const btnImport = document.getElementById("btn-import");
-  const btnImprimer = document.getElementById("btn-imprimer");
-  const btnEmail = document.getElementById("btn-email");
+// Fonction d'affichage du tableau
+function afficherParticipants() {
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
+  const tableBody = document.getElementById("participants-body");
+  const triSelect = document.getElementById("tri-select");
 
-  let eleves = JSON.parse(localStorage.getItem("eleves")) || [];
+  if (!tableBody) return;
 
-  function afficherTableau(data) {
-    tableBody.innerHTML = "";
+  // Affichage initial
+  updateTable(data);
 
-    if (data.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="10">Aucun élève enregistré.</td></tr>';
-      return;
-    }
-
+  // Remplir le menu de tri dynamiquement
+  if (data.length > 0) {
     const keys = Object.keys(data[0]);
-    const tableHead = document.querySelector("#table-head");
-    tableHead.innerHTML = keys.map(k => `<th>${k}</th>`).join("");
+    triSelect.innerHTML = keys
+      .map(key => `<option value="${key}">${key}</option>`)
+      .join("");
+  }
+}
 
-    data.forEach(el => {
-      const row = document.createElement("tr");
-      keys.forEach(k => {
-        const cell = document.createElement("td");
-        cell.textContent = el[k];
-        row.appendChild(cell);
-      });
-      tableBody.appendChild(row);
-    });
+// Fonction de tri
+function trierParticipants() {
+  const critere = document.getElementById("tri-select").value;
+  let data = JSON.parse(localStorage.getItem("eleves") || "[]");
 
-    // Mise en forme visuelle (lignes alternées)
-    document.querySelectorAll("tbody tr:nth-child(even)").forEach(row => {
-      row.style.backgroundColor = "#f2f2f2";
-    });
+  if (data.length === 0) return;
+
+  if (!isNaN(parseFloat(data[0][critere]))) {
+    data.sort((a, b) => parseFloat(b[critere]) - parseFloat(a[critere]));
+  } else {
+    data.sort((a, b) => ("" + a[critere]).localeCompare(b[critere]));
   }
 
-  function trierPar(cle) {
-    eleves.sort((a, b) => {
-      const valA = a[cle];
-      const valB = b[cle];
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return parseFloat(valA) - parseFloat(valB);
-      } else {
-        return String(valA).localeCompare(String(valB));
-      }
+  updateTable(data);
+}
+
+// Affichage tableau
+function updateTable(data) {
+  const tableBody = document.getElementById("participants-body");
+
+  tableBody.innerHTML = data
+    .map((e, i) => `
+      <tr class="${i % 2 === 0 ? 'pair' : 'impair'}">
+        <td>${e.nom || ""}</td>
+        <td>${e.prenom || ""}</td>
+        <td>${e.classe || ""}</td>
+        <td>${e.sexe || ""}</td>
+        <td>${e.distance || ""}</td>
+        <td>${e.vitesse || ""}</td>
+        <td>${e.vma || ""}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+// Export CSV
+function exporterCSV() {
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
+  if (data.length === 0) return;
+
+  const keys = Object.keys(data[0]);
+  const csv = [
+    keys.join(","),
+    ...data.map(row => keys.map(k => row[k] ?? "").join(","))
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "participants.csv";
+  a.click();
+}
+
+// Import CSV
+function importerCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const text = e.target.result;
+    const [header, ...lines] = text.split("\n").filter(l => l.trim() !== "");
+    const keys = header.split(",");
+
+    const data = lines.map(line => {
+      const values = line.split(",");
+      const obj = {};
+      keys.forEach((key, i) => obj[key.trim()] = values[i]?.trim() || "");
+      return obj;
     });
-    afficherTableau(eleves);
+
+    localStorage.setItem("eleves", JSON.stringify(data));
+    updateTable(data);
+  };
+  reader.readAsText(file);
+}
+
+// Impression
+function imprimerTableau() {
+  const contenu = document.getElementById("participants-table").outerHTML;
+  const fenetre = window.open("", "_blank");
+  fenetre.document.write(`
+    <html>
+      <head>
+        <title>Participants</title>
+        <style>
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid black; padding: 5px; text-align: center; }
+          tr.pair { background-color: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h2>Liste des participants</h2>
+        ${contenu}
+        <footer style="margin-top:20px;">ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</footer>
+      </body>
+    </html>
+  `);
+  fenetre.document.close();
+  fenetre.print();
+}
+
+// Envoi mail
+function envoyerParMail() {
+  const data = JSON.parse(localStorage.getItem("eleves") || "[]");
+  if (data.length === 0) return;
+
+  const lignes = data.map(e =>
+    `${e.nom}, ${e.prenom}, ${e.classe}, ${e.sexe}, ${e.distance}, ${e.vitesse}, ${e.vma}`
+  ).join("%0A");
+
+  const mailto = `mailto:?subject=Participants ScanProf&body=Bonjour,%0AVoici la liste des participants scannés :%0A%0A${lignes}%0A%0ACordialement.`;
+  window.location.href = mailto;
+}
+
+// Réinitialiser
+function resetData() {
+  if (confirm("Supprimer tous les participants ?")) {
+    localStorage.removeItem("eleves");
+    location.reload();
   }
+}
 
-  btnTrier.addEventListener("click", () => {
-    const critere = triSelect.value;
-    if (critere) trierPar(critere);
-  });
-
-  btnReset.addEventListener("click", () => {
-    if (confirm("Voulez-vous vraiment réinitialiser la liste ?")) {
-      localStorage.removeItem("eleves");
-      eleves = [];
-      afficherTableau(eleves);
-    }
-  });
-
-  btnExport.addEventListener("click", () => {
-    const csvContent = [
-      Object.keys(eleves[0] || {}).join(","),
-      ...eleves.map(obj => Object.values(obj).join(","))
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "participants.csv";
-    link.click();
-  });
-
-  btnImport.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const lines = event.target.result.split("\n");
-      const headers = lines[0].split(",");
-      const newData = lines.slice(1).map(line => {
-        const values = line.split(",");
-        return Object.fromEntries(headers.map((h, i) => [h.trim(), values[i]?.trim() || ""]));
-      });
-      eleves = newData;
-      localStorage.setItem("eleves", JSON.stringify(eleves));
-      afficherTableau(eleves);
-    };
-    reader.readAsText(file);
-  });
-
-  btnImprimer.addEventListener("click", () => {
-    window.print();
-  });
-
-  btnEmail.addEventListener("click", () => {
-    let contenu = "Bonjour,%0A%0AVeuillez trouver ci-dessous la liste des participants scannés :%0A%0A";
-    contenu += Object.keys(eleves[0] || {}).join("\t") + "%0A";
-    contenu += eleves.map(e => Object.values(e).join("\t")).join("%0A");
-    const mailto = `mailto:?subject=Liste participants ScanProf&body=${contenu}%0A%0ACordialement.`;
-    window.location.href = mailto;
-  });
-
-  // Initialisation
-  afficherTableau(eleves);
-
-  // Ajout dynamique des options de tri
-  const champsDisponibles = Object.keys(eleves[0] || {});
-  triSelect.innerHTML = champsDisponibles.map(champ => `<option value="${champ}">${champ}</option>`).join("");
-});
+window.onload = afficherParticipants;
