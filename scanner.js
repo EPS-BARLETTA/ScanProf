@@ -29,13 +29,13 @@ function startScanner() {
         alert("QR Code invalide ou format non pris en charge.");
       }
 
-      // Redirige vers les participants
+      // Redirige après 1s
       setTimeout(() => {
         window.location.href = "participants.html";
       }, 1000);
     },
     (errorMessage) => {
-      // Silencieux : ignore les erreurs de scan
+      // Ignorer les erreurs
     }
   ).catch(err => {
     qrRegion.innerHTML = "<p>❌ Impossible d'accéder à la caméra.</p>";
