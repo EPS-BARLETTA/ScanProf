@@ -6,16 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
   <style>
-    .wrap {
-      min-height: 100vh; display: grid; grid-template-rows: 1fr auto;
-    }
-    .main {
-      max-width: 1100px; margin: 0 auto; padding: 16px;
-    }
-    .actions {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center;
-      margin: 6px 0 10px;
-    }
+    .wrap { min-height: 100vh; display: grid; grid-template-rows: 1fr auto; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin: 6px 0 10px; }
     .button { padding: 10px 14px; border-radius: 8px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; }
     .blue { background:#1e90ff; color:#fff; }
     .red { background:#dc3545; color:#fff; }
@@ -29,6 +22,7 @@
     tbody tr.pair { background:#ffffff; }
     tbody tr.impair { background:#eaf6ff; }
     footer { background:#1e90ff; color:#fff; text-align:center; padding:10px 12px; }
+    input[type="text"] { padding: 8px 10px; border:1px solid #ccc; border-radius: 6px; min-width: 220px; }
   </style>
   <script src="participants.js" defer></script>
 </head>
@@ -37,6 +31,7 @@
     <main class="main">
       <h1 style="text-align:center; margin:6px 0 10px;">👥 Participants enregistrés</h1>
 
+      <!-- Ligne TRI -->
       <div class="actions">
         <label for="tri-select">Trier par :</label>
         <select id="tri-select"></select>
@@ -44,6 +39,14 @@
         <button class="button red" onclick="resetData()">♻️ Réinitialiser</button>
       </div>
 
+      <!-- NOUVEAU : Filtre texte -->
+      <div class="actions">
+        <label for="filtre-txt">Filtrer (texte) :</label>
+        <input id="filtre-txt" type="text" placeholder="ex. Lola, 5A, F..." oninput="filtrerTexte()">
+        <button class="button" onclick="filtrerTexte()">🔎 Rechercher</button>
+      </div>
+
+      <!-- Exports / impression / mail -->
       <div class="actions">
         <button class="button" onclick="exporterCSV()">📥 Exporter CSV</button>
         <button class="button" onclick="document.getElementById('csv-input').click()">📤 Réimporter CSV</button>
@@ -52,6 +55,7 @@
         <button class="button" onclick="envoyerParMail()">✉️ Envoyer par mail</button>
       </div>
 
+      <!-- Tableau -->
       <div class="table-wrapper">
         <table id="participants-table">
           <thead id="table-head">
@@ -64,6 +68,7 @@
         </table>
       </div>
 
+      <!-- Navigation -->
       <div class="actions" style="margin-top:12px;">
         <a href="groupe-zenos.html" class="button yellow">🧬 Groupes ZENOS Tour</a>
         <a href="index.html" class="button green">🏠 Accueil</a>
