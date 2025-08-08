@@ -1,93 +1,259 @@
-document.addEventListener("DOMContentLoaded", function () {
-    const tableContainer = document.getElementById("groupes-container");
-    const participants = JSON.parse(localStorage.getItem("participants")) || [];
+// ====== GROUPES ZENOS ======
+function genererGroupesZenos() {
+  const all = JSON.parse(localStorage.getItem("eleves") || "[]");
 
-    if (!participants.length) {
-        tableContainer.innerHTML = "<p>Aucun participant enregistré.</p>";
-        return;
-    }
+  // Champs indispensables
+  const valides = all
+    .filter(e => e && e.vma !== undefined && e.vma !== "" && e.classe && e.sexe)
+    .map(e => ({ ...e, vma: Number(e.vma) }))
+    .filter(e => !Number.isNaN(e.vma));
 
-    // Vérification des données nécessaires
-    if (!participants.every(p => p.vma && p.classe)) {
-        tableContainer.innerHTML = "<p style='color:red;'>❌ Données incomplètes (VMA ou classe manquantes)</p>";
-        return;
-    }
+  if (valides.length < 4) {
+    alert("Données incomplètes (VMA, classe ou sexe manquants).");
+    return;
+  }
 
-    // Tri par VMA décroissante
-    participants.sort((a, b) => b.vma - a.vma);
+  // Regrouper par classe
+  const parClasse = {};
+  valides.forEach(e => {
+    const c = String(e.classe).trim();
+    if (!parClasse[c]) parClasse[c] = [];
+    parClasse[c].push(e);
+  });
 
-    // Séparation par sexe
-    const hommes = participants.filter(p => p.sexe && p.sexe.toUpperCase() === "G");
-    const femmes = participants.filter(p => p.sexe && p.sexe.toUpperCase() === "F");
+  const groupes = [];  // [{classe, membres:[...]}]
+  const restants = [];
 
-    const groupes = [];
-    const nonAttribues = [];
+  Object.entries(parClasse).forEach(([classe, liste]) => {
+    // Tri VMA décroissante
+    liste.sort((a, b) => b.vma - a.vma);
 
-    // Création des groupes de 4 équilibrés
-    while (hommes.length + femmes.length >= 4) {
-        let groupe = [];
+    // On monte des paquets de 4 : [haut][m1][m2][bas]
+    while (liste.length >= 4) {
+      const haut = liste.shift();  // VMA max
+      const bas  = liste.pop();    // VMA min
 
-        // 1 VMA haute
-        groupe.push(hommes.length ? hommes.shift() : femmes.shift());
+      // Essai de mixité sur les 2 moyens
+      let m1, m2;
 
-        // 1 VMA basse
-        groupe.push(femmes.length ? femmes.pop() : hommes.pop());
+      const wantF = "F", wantG = "G";
+      const fIdx = liste.findIndex(x => String(x.sexe).toUpperCase().startsWith(wantF));
+      const gIdx = liste.findIndex(x => String(x.sexe).toUpperCase().startsWith(wantG));
 
-        // 2 moyens (en prenant 1H + 1F si possible)
-        for (let i = 0; i < 2; i++) {
-            if (hommes.length && femmes.length) {
-                groupe.push(i % 2 === 0 ? hommes.shift() : femmes.shift());
-            } else if (hommes.length) {
-                groupe.push(hommes.shift());
-            } else if (femmes.length) {
-                groupe.push(femmes.shift());
-            }
+      if (fIdx !== -1 && gIdx !== -1 && fIdx !== gIdx) {
+        // Prend 1F + 1G
+        const firstIdx  = Math.min(fIdx, gIdx);
+        const secondKey = (firstIdx === fIdx) ? wantG : wantF;
+        const first  = liste.splice(firstIdx, 1)[0];
+        const secondIdx = liste.findIndex(x => String(x.sexe).toUpperCase().startsWith(secondKey));
+        if (secondIdx !== -1) {
+          const second = liste.splice(secondIdx, 1)[0];
+          m1 = first; m2 = second;
         }
+      }
 
-        groupes.push(groupe);
+      // fallback si pas de mixité possible
+      if (!m1 || !m2) {
+        m1 = liste.shift();
+        m2 = liste.shift();
+      }
+
+      groupes.push({ classe, membres: [haut, m1, m2, bas] });
     }
 
-    // Élèves restants
-    nonAttribues.push(...hommes, ...femmes);
-
-    // Fonction pour créer un tableau HTML pour un groupe
-    function creerTableau(titre, eleves) {
-        let html = `<h3>${titre}</h3>`;
-        html += `<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;text-align:center;">
-                    <thead style="background:#f2f2f2;">
-                        <tr>
-                            <th>Nom</th>
-                            <th>Prénom</th>
-                            <th>Classe</th>
-                            <th>Sexe</th>
-                            <th>VMA</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-        eleves.forEach((e, index) => {
-            html += `<tr style="background:${index % 2 === 0 ? "#fff" : "#f9f9f9"};">
-                        <td>${e.nom || e.Nom}</td>
-                        <td>${e.prenom || e.Prénom}</td>
-                        <td>${e.classe || e.Classe}</td>
-                        <td>${e.sexe || e.Sexe}</td>
-                        <td>${e.vma || e.VMA}</td>
-                    </tr>`;
-        });
-        html += `</tbody></table>`;
-        return html;
+    // Reste de cette classe
+    if (liste.length) {
+      restants.push(...liste.map(e => ({ ...e, classe })));
     }
+  });
 
-    // Affichage des groupes
-    let contenuHTML = "";
-    groupes.forEach((groupe, index) => {
-        contenuHTML += creerTableau(`Groupe ${index + 1}`, groupe);
+  renderGroupes(groupes, restants);
+}
+
+// ====== RENDU ======
+function renderGroupes(groupes, restants) {
+  const cont = document.getElementById("groupes");
+  const resteCont = document.getElementById("restants");
+  cont.innerHTML = "";
+  resteCont.innerHTML = "";
+
+  // Un tableau distinct par groupe
+  groupes.forEach((g, idx) => {
+    const table = document.createElement("table");
+    table.className = "zenos-group";
+    table.innerHTML = `
+      <caption>Groupe ${idx + 1} — Classe ${escapeHtml(g.classe)}</caption>
+      <thead>
+        <tr>
+          <th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${g.membres.map((m, i) => `
+          <tr style="background:${i % 2 ? '#eaf6ff' : '#fff'}">
+            <td>${escapeHtml(m.nom ?? "")}</td>
+            <td>${escapeHtml(m.prenom ?? "")}</td>
+            <td>${escapeHtml(m.classe ?? "")}</td>
+            <td>${escapeHtml(m.sexe ?? "")}</td>
+            <td>${escapeHtml(m.vma ?? "")}</td>
+            <td>${escapeHtml(m.distance ?? "")}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+    cont.appendChild(table);
+  });
+
+  // Élèves non attribués
+  if (restants.length) {
+    const titre = document.createElement("h3");
+    titre.textContent = "Élèves non attribués à un groupe de 4";
+    resteCont.appendChild(titre);
+
+    const table = document.createElement("table");
+    table.className = "zenos-group";
+    table.innerHTML = `
+      <thead>
+        <tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th></tr>
+      </thead>
+      <tbody>
+        ${restants.map((e, i) => `
+          <tr style="background:${i % 2 ? '#eaf6ff' : '#fff'}">
+            <td>${escapeHtml(e.nom ?? "")}</td>
+            <td>${escapeHtml(e.prenom ?? "")}</td>
+            <td>${escapeHtml(e.classe ?? "")}</td>
+            <td>${escapeHtml(e.sexe ?? "")}</td>
+            <td>${escapeHtml(e.vma ?? "")}</td>
+            <td>${escapeHtml(e.distance ?? "")}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+    resteCont.appendChild(table);
+
+    const p = document.createElement("p");
+    p.className = "notice";
+    p.textContent = "Ces élèves n’ont pas pu être intégrés dans un groupe complet de 4. L’enseignant peut les répartir manuellement.";
+    resteCont.appendChild(p);
+  }
+}
+
+// ====== EXPORTS ======
+function exporterGroupesCSV() {
+  const tables = document.querySelectorAll(".zenos-group");
+  if (!tables.length) return;
+
+  let csv = "Groupe,Nom,Prénom,Classe,Sexe,VMA,Distance\n";
+  tables.forEach((table, tIdx) => {
+    const caption = table.querySelector("caption")?.textContent || `Groupe ${tIdx+1}`;
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const cells = Array.from(tr.querySelectorAll("td")).map(td => td.textContent.trim());
+      csv += `${caption},${cells.join(",")}\n`;
     });
+  });
 
-    // Affichage des non-attribués
-    if (nonAttribues.length) {
-        contenuHTML += `<h3>Élèves non attribués</h3>`;
-        contenuHTML += creerTableau("Non attribués", nonAttribues);
-    }
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "groupes_zenos.csv";
+  a.click();
+}
 
-    tableContainer.innerHTML = contenuHTML;
-});
+function exporterGroupesPDF() {
+  const contentHtml = `
+    <h1 style="text-align:center;">ZENOS TOUR</h1>
+    ${document.getElementById("groupes").innerHTML}
+    ${document.getElementById("restants").innerHTML}
+    <div style="margin-top:24px;text-align:center;">
+      ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+    </div>
+  `;
+
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html>
+      <head>
+        <title>Groupes ZENOS</title>
+        <meta charset="UTF-8" />
+        <style>
+          body { font-family: Arial, sans-serif; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+          th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+          caption { font-weight: 700; margin-bottom: 6px; }
+          tbody tr:nth-child(even) { background: #f2f2f2; }
+        </style>
+      </head>
+      <body>${contentHtml}</body>
+    </html>
+  `);
+  win.document.close();
+  win.print(); // "Enregistrer en PDF" côté utilisateur
+}
+
+function imprimerGroupes() {
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html>
+      <head>
+        <title>Impression - Groupes ZENOS</title>
+        <meta charset="UTF-8" />
+        <style>
+          body { font-family: Arial, sans-serif; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+          th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+          caption { font-weight: 700; margin-bottom: 6px; }
+          tbody tr:nth-child(even) { background: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h1 style="text-align:center;">ZENOS TOUR</h1>
+        ${document.getElementById("groupes").innerHTML}
+        ${document.getElementById("restants").innerHTML}
+        <div style="margin-top:24px;text-align:center;">
+          ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB
+        </div>
+      </body>
+    </html>
+  `);
+  win.document.close();
+  win.print();
+}
+
+function envoyerGroupesParMail() {
+  const tables = document.querySelectorAll(".zenos-group");
+  if (!tables.length) return;
+
+  let corps = "Groupes ZENOS :%0A%0A";
+  tables.forEach((table, tIdx) => {
+    const caption = table.querySelector("caption")?.textContent || `Groupe ${tIdx+1}`;
+    corps += caption + "%0A";
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const row = Array.from(tr.querySelectorAll("td")).map(td => td.textContent.trim()).join(" | ");
+      corps += row + "%0A";
+    });
+    corps += "%0A";
+  });
+
+  // Ajout des non-attribués si présents
+  const nonAttribuesBlock = document.querySelector("#restants table.zenos-group tbody");
+  if (nonAttribuesBlock) {
+    corps += "Élèves non attribués :%0A";
+    Array.from(nonAttribuesBlock.querySelectorAll("tr")).forEach(tr => {
+      const row = Array.from(tr.querySelectorAll("td")).map(td => td.textContent.trim()).join(" | ");
+      corps += row + "%0A";
+    });
+  }
+
+  const lien = `mailto:?subject=Groupes ZENOS&body=${corps}Cordialement.`;
+  window.location.href = lien;
+}
+
+// ====== UTILS ======
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
