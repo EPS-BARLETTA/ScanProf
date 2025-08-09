@@ -1,5 +1,5 @@
-// zenos.js — normalisation des classes + un seul tableau par classe ou "Tous"
-// Compatible iPad/Safari (ES5)
+// zenos.js — normalisation des classes + tableau unique + exports
+// Seul l'envoi par mail a été amélioré (objet/texte pro, pas de %0A)
 
 document.addEventListener("DOMContentLoaded", function () {
   var all = safeParse(localStorage.getItem("eleves")) || [];
@@ -280,50 +280,89 @@ function imprimerGroupes() {
 
 function exporterGroupesPDF() { imprimerGroupes(); }
 
-// --- NOUVEAU format de mail (Groupe X + "Nom Prénom" lignes) ---
+// --- Mail PRO sans %0A parasites : sujet + intro + groupes lisibles + signature
 function envoyerGroupesParMail() {
   var table = document.querySelector("table.zenos-unique");
   if (!table) return;
 
+  var classeTitre = (document.getElementById("titre-classe") && document.getElementById("titre-classe").textContent || "").trim();
+  var subject = "Groupes ZENOS TOUR" + (classeTitre ? " – " + classeTitre : "");
+
   var rows = table.querySelectorAll("tbody tr");
-  var corps = "Bonjour, voici les groupes générés par ScanProf pour lancer le défi ZENOS Tour. Bonne course !%0A%0A";
+  var lignes = [];
 
-  var courant = "";      // "Groupe X"
-  var lignesGrp = [];    // lignes "Nom Prénom"
+  // En-tête propre
+  lignes.push("Bonjour,");
+  lignes.push("");
+  lignes.push("Voici les groupes générés par ScanProf pour lancer le défi ZENOS Tour. Bonne course !");
+  lignes.push("");
 
+  // Parcours du tableau unique : un bloc par groupe, 4 lignes "Nom Prénom"
+  var courant = "";     // "Groupe X"
+  var buffer = [];      // ["Nom Prénom", ...]
   for (var i = 0; i < rows.length; i++) {
     var tr = rows[i];
+
+    // séparateur de groupe
     if (tr.className === "separator-row") {
-      if (courant && lignesGrp.length) {
-        corps += encodeURIComponent(courant) + "%0A";
-        corps += encodeURIComponent(lignesGrp.join("%0A")) + "%0A%0A";
+      if (courant && buffer.length) {
+        lignes.push(courant);
+        for (var k = 0; k < buffer.length; k++) lignes.push(buffer[k]);
+        lignes.push(""); // ligne vide entre groupes
       }
-      courant = ""; lignesGrp = [];
+      courant = ""; buffer = [];
       continue;
     }
 
     var tds = tr.querySelectorAll("td");
     if (tds.length === 7) {
-      if (courant && lignesGrp.length) {
-        corps += encodeURIComponent(courant) + "%0A";
-        corps += encodeURIComponent(lignesGrp.join("%0A")) + "%0A%0A";
-        lignesGrp = [];
+      // première ligne d'un groupe (colonne "Groupe" présente)
+      if (courant && buffer.length) {
+        lignes.push(courant);
+        for (var k2 = 0; k2 < buffer.length; k2++) lignes.push(buffer[k2]);
+        lignes.push("");
+        buffer = [];
       }
-      courant = (tds[0].textContent || "Groupe").trim();
+      courant = (tds[0].textContent || "Groupe").trim(); // ex. "Groupe 1"
       var nom = (tds[1].textContent || "").trim();
       var prenom = (tds[2].textContent || "").trim();
-      lignesGrp.push(nom + " " + prenom);
+      buffer.push(nom + " " + prenom);
     } else if (tds.length === 6) {
+      // lignes suivantes (sans la colonne Groupe)
       var n = (tds[0].textContent || "").trim();
       var p = (tds[1].textContent || "").trim();
-      lignesGrp.push(n + " " + p);
+      buffer.push(n + " " + p);
     }
   }
-  if (courant && lignesGrp.length) {
-    corps += encodeURIComponent(courant) + "%0A";
-    corps += encodeURIComponent(lignesGrp.join("%0A")) + "%0A%0A";
+  // flush final
+  if (courant && buffer.length) {
+    lignes.push(courant);
+    for (var k3 = 0; k3 < buffer.length; k3++) lignes.push(buffer[k3]);
+    lignes.push("");
   }
 
-  var mailto = "mailto:?subject=" + encodeURIComponent("Groupes ZENOS") + "&body=" + corps;
+  // Élèves non attribués (seulement Nom Prénom)
+  var nonAttribTbody = document.querySelector("#restants table.unassigned tbody");
+  if (nonAttribTbody) {
+    var restantsRows = nonAttribTbody.querySelectorAll("tr");
+    if (restantsRows.length) {
+      lignes.push("Élèves à attribuer manuellement :");
+      for (var r = 0; r < restantsRows.length; r++) {
+        var t = restantsRows[r].querySelectorAll("td");
+        var rn = (t[0] && t[0].textContent || "").trim();
+        var rp = (t[1] && t[1].textContent || "").trim();
+        lignes.push(rn + " " + rp);
+      }
+      lignes.push("");
+    }
+  }
+
+  // Signature pro
+  lignes.push("Cordialement,");
+  lignes.push("L’équipe ScanProf");
+
+  var bodyText = lignes.join("\n"); // vrais retours à la ligne
+  var mailto = "mailto:?subject=" + encodeURIComponent(subject) +
+               "&body=" + encodeURIComponent(bodyText); // encodage unique
   window.location.href = mailto;
 }
