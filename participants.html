@@ -31,7 +31,7 @@
     <main class="main">
       <h1 style="text-align:center; margin:6px 0 10px;">👥 Participants enregistrés</h1>
 
-      <!-- Ligne TRI -->
+      <!-- Tri -->
       <div class="actions">
         <label for="tri-select">Trier par :</label>
         <select id="tri-select"></select>
@@ -39,20 +39,19 @@
         <button class="button red" onclick="resetData()">♻️ Réinitialiser</button>
       </div>
 
-      <!-- NOUVEAU : Filtre texte -->
+      <!-- Filtre texte -->
       <div class="actions">
         <label for="filtre-txt">Filtrer (texte) :</label>
         <input id="filtre-txt" type="text" placeholder="ex. Lola, 5A, F..." oninput="filtrerTexte()">
         <button class="button" onclick="filtrerTexte()">🔎 Rechercher</button>
       </div>
 
-      <!-- Exports / impression / mail -->
+      <!-- Exports / impression -->
       <div class="actions">
         <button class="button" onclick="exporterCSV()">📥 Exporter CSV</button>
         <button class="button" onclick="document.getElementById('csv-input').click()">📤 Réimporter CSV</button>
         <input id="csv-input" type="file" accept=".csv" style="display:none" onchange="importerCSV(event)">
-        <button class="button" onclick="imprimerTableau()">🖨️ Imprimer</button>
-        <button class="button" onclick="envoyerParMail()">✉️ Envoyer par mail</button>
+        <button class="button" onclick="imprimerTableau()">🖨️ Imprimer / PDF</button>
       </div>
 
       <!-- Tableau -->
