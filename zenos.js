@@ -1,4 +1,4 @@
-// zenos.js — normalisation des classes + un seul tableau par classe (ou "Tous")
+// zenos.js — normalisation des classes + un seul tableau par classe ou "Tous"
 // Compatible iPad/Safari (ES5)
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -56,20 +56,20 @@ function canonClasse(raw) {
   s = s.replace(/[ÉÈÊ]/g, "E").replace(/[ÀÂÄ]/g, "A").replace(/[ÙÛÜ]/g, "U").replace(/[ÎÏ]/g, "I").replace(/[ÔÖ]/g, "O").replace(/[Ç]/g, "C");
   // enlève espaces/points/tirets/underscores
   s = s.replace(/[\s._-]+/g, "");
-  // remplace "EME"/"ÈME"/"EM" par "E"
+  // remplace "EME"/"EM" par "E"
   s = s.replace(/EME/g, "E").replace(/EM/g, "E");
   // cas communs : 5E A → 5A
   s = s.replace(/^(\d+)E([A-Z])$/, "$1$2");
-  // Si pattern du type "5A" ok ; sinon essaie d’extraire chiffre+lettre
+  // pattern "5A"
   var m = s.match(/^(\d+)([A-Z])$/);
   if (m) return m[1] + m[2];
-  // Essaye "5" + "EME" + "A"
+  // "5EME A" → 5A
   m = s.match(/^(\d+)E?ME?([A-Z])$/);
   if (m) return m[1] + m[2];
-  // Dernier recours : garde que chiffres+1 lettre finale
+  // Dernier recours : chiffre + lettre
   m = s.match(/^(\d+).*?([A-Z])$/);
   if (m) return m[1] + m[2];
-  return s; // fallback
+  return s;
 }
 
 function uniqueClasses(all) {
@@ -84,7 +84,7 @@ function uniqueClasses(all) {
 
 function genererGroupesZenos() {
   var all = safeParse(localStorage.getItem("eleves")) || [];
-  // normalise ici aussi au cas où des scans ont été ajoutés après
+  // normalise encore (au cas où nouveaux scans)
   for (var i = 0; i < all.length; i++) {
     if (all[i]) all[i].classe = canonClasse(all[i].classe || all[i].Classe || "");
   }
@@ -98,7 +98,7 @@ function genererGroupesZenos() {
     if (e.vma === undefined || e.vma === "") continue;
     var v = Number(e.vma);
     if (isNaN(v)) continue;
-    if (choix !== "__TOUS__" && e.classe !== choix) continue;
+    if (choix !== "__TOUS__" && (e.classe || "") !== choix) continue;
 
     candidats.push({
       nom: e.nom || e.Nom || "",
@@ -260,6 +260,7 @@ function exporterGroupesCSV() {
   a.download = "groupes_zenos.csv";
   a.click();
 }
+
 function imprimerGroupes() {
   var zone = document.getElementById("groupes-panel");
   if (!zone) return;
@@ -276,20 +277,53 @@ function imprimerGroupes() {
   win.document.close();
   win.print();
 }
+
 function exporterGroupesPDF() { imprimerGroupes(); }
+
+// --- NOUVEAU format de mail (Groupe X + "Nom Prénom" lignes) ---
 function envoyerGroupesParMail() {
   var table = document.querySelector("table.zenos-unique");
   if (!table) return;
+
   var rows = table.querySelectorAll("tbody tr");
-  var body = "Groupes ZENOS%0A%0A";
-  for (var i=0; i<rows.length; i++) {
-    if (rows[i].className === "separator-row") { body += "%0A"; continue; }
-    var cells = rows[i].querySelectorAll("td");
-    var line = [];
-    for (var c=0; c<cells.length; c++) line.push((cells[c].textContent || "").trim());
-    body += encodeURIComponent(line.join(" | ")) + "%0A";
+  var corps = "Bonjour, voici les groupes générés par ScanProf pour lancer le défi ZENOS Tour. Bonne course !%0A%0A";
+
+  var courant = "";      // "Groupe X"
+  var lignesGrp = [];    // lignes "Nom Prénom"
+
+  for (var i = 0; i < rows.length; i++) {
+    var tr = rows[i];
+    if (tr.className === "separator-row") {
+      if (courant && lignesGrp.length) {
+        corps += encodeURIComponent(courant) + "%0A";
+        corps += encodeURIComponent(lignesGrp.join("%0A")) + "%0A%0A";
+      }
+      courant = ""; lignesGrp = [];
+      continue;
+    }
+
+    var tds = tr.querySelectorAll("td");
+    if (tds.length === 7) {
+      if (courant && lignesGrp.length) {
+        corps += encodeURIComponent(courant) + "%0A";
+        corps += encodeURIComponent(lignesGrp.join("%0A")) + "%0A%0A";
+        lignesGrp = [];
+      }
+      courant = (tds[0].textContent || "Groupe").trim();
+      var nom = (tds[1].textContent || "").trim();
+      var prenom = (tds[2].textContent || "").trim();
+      lignesGrp.push(nom + " " + prenom);
+    } else if (tds.length === 6) {
+      var n = (tds[0].textContent || "").trim();
+      var p = (tds[1].textContent || "").trim();
+      lignesGrp.push(n + " " + p);
+    }
   }
-  body += "%0A— ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB";
-  var mailto = "mailto:?subject=" + encodeURIComponent("Groupes ZENOS") + "&body=" + body;
+  if (courant && lignesGrp.length) {
+    corps += encodeURIComponent(courant) + "%0A";
+    corps += encodeURIComponent(lignesGrp.join("%0A")) + "%0A%0A";
+  }
+
+  var mailto = "mailto:?subject=" + encodeURIComponent("Groupes ZENOS") + "&body=" + corps;
   window.location.href = mailto;
 }
