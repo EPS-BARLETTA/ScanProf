@@ -1,7 +1,7 @@
 // zenos.js — Groupes ZENOS : 1H + 2M + 1B, mixité stricte si possible.
-// Suggestions d’échanges (swap même rôle) avec bouton “Appliquer”.
+// Suggestions d’échanges (même rôle) avec boutons “Appliquer” et “Tout appliquer”.
 
-// État courant pour appliquer les swaps sans regénérer tout
+// État courant (sert aux exports et aux swaps)
 window._zenosGroupes = [];
 window._zenosRestants = [];
 window._zenosChoixClasse = "__TOUS__";
@@ -62,8 +62,8 @@ function appendCell(tr, val){ const td=document.createElement("td"); td.textCont
 function normSexe(s){
   const x = String(s||"").trim().toUpperCase();
   if (x.startsWith("F")) return "F";
-  if (x.startsWith("G") || x.startsWith("M")) return "G"; // selon saisies
-  return "X"; // inconnu
+  if (x.startsWith("G") || x.startsWith("M")) return "G";
+  return "X";
 }
 
 // Quartiles sur VMA (ascendant)
@@ -166,7 +166,7 @@ function indexByRole(groups){
   return idx;
 }
 
-// Petit passage d’équilibrage auto : si un groupe n’a pas F (ou pas G), on essaie UN swap même rôle
+// Petit équilibrage auto : si un groupe n’a pas F (ou pas G), on essaie UN swap même rôle
 function balanceMixiteAuto(groupes){
   const idx = indexByRole(groupes);
   for (let gi=0; gi<groupes.length; gi++){
@@ -214,7 +214,7 @@ function computeSwapSuggestions(groupes){
           const bIdx = groupes[gj].findIndex(e => e.sexe===want && (e.role||"M+")===role);
           if (bIdx === -1) continue;
           const cj = countFG(groupes[gj]);
-          if ((want==="F" ? cj.F : cj.G) < 2) continue;
+          if ((want==="F" ? cj.F : cj.G) < 2) continue; // ne déséquilibre pas l’autre
 
           const A = groupes[gi][aIdx], B = groupes[gj][bIdx];
           res.push({
@@ -238,6 +238,23 @@ function zenosApplySwap(idx){
   const tmp = gA[s.a.ei];
   gA[s.a.ei] = gB[s.b.ei];
   gB[s.b.ei] = tmp;
+  const newSugg = computeSwapSuggestions(window._zenosGroupes);
+  renderTableauGroupes(window._zenosGroupes, window._zenosRestants, newSugg);
+}
+
+// Tout appliquer (boucle jusqu’à ce qu’il n’y ait plus de suggestions ou limite)
+function zenosApplyAllSwaps(){
+  let guard = 40; // sécurité
+  while (guard-- > 0){
+    const suggs = computeSwapSuggestions(window._zenosGroupes);
+    if (!suggs.length) break;
+    // applique la première suggestion
+    const s = suggs[0];
+    const gA = window._zenosGroupes[s.a.gi], gB = window._zenosGroupes[s.b.gi];
+    const tmp = gA[s.a.ei];
+    gA[s.a.ei] = gB[s.b.ei];
+    gB[s.b.ei] = tmp;
+  }
   const newSugg = computeSwapSuggestions(window._zenosGroupes);
   renderTableauGroupes(window._zenosGroupes, window._zenosRestants, newSugg);
 }
@@ -324,6 +341,19 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
     box.innerHTML = "<strong>Mixité partielle :</strong> suggestions d’échanges (même rôle)";
     restantsDiv.appendChild(box);
 
+    // Bouton "Tout appliquer"
+    const actions = document.createElement("div");
+    actions.style.textAlign = "right";
+    const allBtn = document.createElement("button");
+    allBtn.textContent = "Tout appliquer";
+    allBtn.style.padding = "4px 10px";
+    allBtn.style.border = "1px solid #aaa";
+    allBtn.style.borderRadius = "6px";
+    allBtn.style.background = "#f2f2f2";
+    allBtn.onclick = zenosApplyAllSwaps;
+    actions.appendChild(allBtn);
+    box.appendChild(actions);
+
     const ul = document.createElement("ul");
     ul.style.marginTop = "6px";
     suggestions.forEach((s, i) => {
@@ -333,7 +363,7 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
       btn.textContent = "Appliquer";
       btn.style.marginLeft = "8px";
       btn.style.padding = "2px 8px";
-      btn.style.border = '1px solid #aaa';   // ✅ guillemets corrigés
+      btn.style.border = '1px solid #aaa';
       btn.style.borderRadius = "6px";
       btn.style.background = "#f2f2f2";
       btn.onclick = () => zenosApplySwap(i);
@@ -350,27 +380,18 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
 
 // ===== Exports =====
 function exporterGroupesCSV(){
-  const table = document.querySelector("table.zenos-unique");
-  if (!table) return;
+  // Utilise l’état mémoire si dispo (plus fiable que le DOM)
+  const groupes = window._zenosGroupes || [];
+  if (!groupes.length){
+    alert("Générez les groupes avant d’exporter.");
+    return;
+  }
 
-  const rows = table.querySelectorAll("tbody tr");
   const csv = [];
   csv.push(["Groupe","Nom","Prénom","Classe","Sexe","VMA","Distance"].join(","));
-  let currentGroup = 0;
-
-  for (const tr of rows){
-    if (tr.classList.contains("separator-row")) continue; // ignore la ligne séparatrice
-    const tds = tr.querySelectorAll("td");
-
-    if (tds.length >= 7) { // première ligne d’un groupe (avec cellule "Groupe")
-      currentGroup++;
-      const cells = Array.from(tds).slice(1, 7).map(td => td.textContent.trim());
-      csv.push([`Groupe ${currentGroup}`, ...cells].map(csvSafe).join(","));
-    } else if (tds.length >= 6) { // autres lignes du groupe
-      const cells = Array.from(tds).slice(0, 6).map(td => td.textContent.trim());
-      csv.push([`Groupe ${currentGroup}`, ...cells].map(csvSafe).join(","));
-    } else {
-      continue;
+  for (let g=0; g<groupes.length; g++){
+    for (const e of groupes[g]){
+      csv.push([`Groupe ${g+1}`, e.nom, e.prenom, e.classe, e.sexe, e.vma, e.distance].map(csvSafe).join(","));
     }
   }
 
@@ -401,39 +422,27 @@ function imprimerGroupes(){
 function exporterGroupesPDF(){ imprimerGroupes(); }
 
 function envoyerGroupesParMail(){
-  const table = document.querySelector("table.zenos-unique");
-  if (!table) return;
-
-  const titreElt = document.getElementById("titre-classe");
-  const classeTitre = titreElt ? titreElt.textContent.trim() : "";
-  const subject = "Groupes ZENOS TOUR" + (classeTitre ? " – " + classeTitre : "");
-
-  const rows = table.querySelectorAll("tbody tr");
-  const lignes = [];
-  lignes.push("Bonjour,","");
-  if (classeTitre) lignes.push(classeTitre);
-  lignes.push("Groupes ZENOS :","");
-
-  let currentGroup = 0;
-  for (const tr of rows){
-    if (tr.classList.contains("separator-row")) continue; // ignore
-    const tds = tr.querySelectorAll("td");
-
-    if (tds.length >= 7) { // première ligne d’un groupe
-      currentGroup++;
-      lignes.push("Groupe " + currentGroup + " :");
-      const nom = tds[1].textContent.trim();
-      const pre = tds[2].textContent.trim();
-      if (nom || pre) lignes.push(" - " + nom + " " + pre);
-      lignes.push("");
-    } else if (tds.length >= 6) { // autres lignes
-      const nom = tds[0].textContent.trim();
-      const pre = tds[1].textContent.trim();
-      if (nom || pre) lignes.push(" - " + nom + " " + pre);
-    }
+  const groupes = window._zenosGroupes || [];
+  if (!groupes.length){
+    alert("Générez les groupes avant d’envoyer par mail.");
+    return;
   }
 
-  lignes.push("","Cordialement,","L’équipe ScanProf");
+  const titreElt = document.getElementById("titre-classe");
+  const classeTitre = (titreElt ? titreElt.textContent.trim() : "") || "Tous (classe ignorée)";
+  const subject = `Groupes ZENOS TOUR – ${classeTitre}`;
+
+  const lignes = [];
+  lignes.push("Bonjour,","");
+  lignes.push(`Voici vos groupes pour le ZENOS TOUR – ${classeTitre} :`,"");
+
+  for (let g=0; g<groupes.length; g++){
+    lignes.push(`Groupe ${g+1} :`);
+    for (const e of groupes[g]) lignes.push(`- ${e.nom} ${e.prenom}`);
+    lignes.push(""); // ligne vide entre groupes
+  }
+
+  lignes.push("Cordialement,","L’équipe ScanProf");
 
   const bodyText = lignes.join("\n");
   const mailto = "mailto:?subject=" + encodeURIComponent(subject) +
