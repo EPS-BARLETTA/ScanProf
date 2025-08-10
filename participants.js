@@ -3,27 +3,37 @@ let _elevesBrut = [];
 let _vueCourante = [];
 
 // --- Helpers ---
-// --- Helper: compute ordered column keys across all rows ---
+// Calcule l’ensemble des colonnes présentes (standard d’abord si dispo, puis autres clés en alpha)
 function allColumnKeys(rows) {
   if (!rows || !rows.length) return [];
   const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma","intermediaires","temps_total"];
   const set = new Set();
   rows.forEach(r => Object.keys(r || {}).forEach(k => set.add(k)));
-  // standard d’abord si présents, puis autres clés en ordre alpha
   const others = Array.from(set)
     .filter(k => !standard.includes(k))
     .sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
   return [...standard.filter(k => set.has(k)), ...others];
 }
 
-// Render helper pour mieux afficher certaines cellules
+// Améliore le rendu de certaines cellules (splits/intermédiaires, objets, listes…)
 function formatCellValue(key, val) {
   if (val == null) return "";
   const k = (key || "").toLowerCase();
-  // Si c’est "intermediaires" avec des valeurs séparées par des virgules -> une ligne par valeur
-  if (typeof val === "string" && val.includes(",") && (k.includes("interm") || k.includes("split"))) {
-    return val.split(",").map(s => s.trim()).join("<br>");
+
+  // Détecte listes séparées par virgule/point-virgule : affiche en “pills” empilés
+  if (typeof val === "string" && /[,;]/.test(val) && (k.includes("inter") || k.includes("split") || k.includes("temps"))) {
+    const parts = val.split(/[;,]\s*/).filter(Boolean);
+    return parts.map(s =>
+      `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;border-radius:999px;background:#eef;border:1px solid #d5d9ff;">${s}</span>`
+    ).join("<br>");
   }
+
+  // Aplatissement simple si array/objet
+  if (Array.isArray(val)) return val.map(v => formatCellValue(k, v)).join("<br>");
+  if (typeof val === "object") {
+    return Object.entries(val).map(([kk, vv]) => `<div><strong>${kk}:</strong> ${formatCellValue(kk, vv)}</div>`).join("");
+  }
+
   return String(val);
 }
 
@@ -34,7 +44,7 @@ function afficherParticipants() {
 
   const triSelect = document.getElementById("tri-select");
 
-  // Menu de tri basé sur l’union des clés
+  // Alimente le menu de tri d'après l’union des clés présentes
   if (_elevesBrut.length > 0) {
     const keys = allColumnKeys(_elevesBrut);
     triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
@@ -182,18 +192,24 @@ function imprimerTableau() {
   wdoc.write(`
     <html>
       <head>
-        <title>Participants</title>
         <meta charset="utf-8">
+        <title>Participants</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
+          @page { size: A4; margin: 12mm; }
+          body { font-family: Arial, sans-serif; margin: 0; font-size: 12pt; }
+          h1 { font-size: 16pt; margin: 0 0 8mm 0; }
           table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+          th, td { border: 1px solid #ccc; padding: 6pt; text-align: left; vertical-align: top; }
           th { background: #f2f2f2; }
-          tr:nth-child(even) { background: #f9f9f9; }
+          tr:nth-child(even) { background: #fafafa; }
+          td { white-space: normal; word-break: break-word; }
+          .footer { margin-top: 8mm; font-size: 9pt; color: #666; text-align: center; }
         </style>
       </head>
       <body>
+        <h1>Participants enregistrés</h1>
         ${table.outerHTML}
+        <div class="footer">ScanProf — Impression du ${new Date().toLocaleString()}</div>
       </body>
     </html>
   `);
@@ -202,8 +218,8 @@ function imprimerTableau() {
   setTimeout(() => {
     (iframe.contentWindow || iframe).focus();
     (iframe.contentWindow || iframe).print();
-    setTimeout(() => document.body.removeChild(iframe), 1000);
-  }, 100);
+    setTimeout(() => document.body.removeChild(iframe), 800);
+  }, 120);
 }
 
 // -------- Envoi par mail --------
