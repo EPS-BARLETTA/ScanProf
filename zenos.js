@@ -62,7 +62,7 @@ function appendCell(tr, val){ const td=document.createElement("td"); td.textCont
 function normSexe(s){
   const x = String(s||"").trim().toUpperCase();
   if (x.startsWith("F")) return "F";
-  if (x.startsWith("G") || x.startsWith("M")) return "G";
+  if (x.startsWith("G") || x.startsWith("M")) return "G"; // selon saisies
   return "X"; // inconnu
 }
 
@@ -124,7 +124,7 @@ function genererGroupesZenos(){
     let gH = take(h, "high") || take(mp,"high") || take(mm,"high") || take(b,"high");
     let gM1 = take(mp,"high") || take(mm,"high") || take(h,"high") || take(b,"high");
     let gM2 = take(mm,"low")  || take(mp,"low")  || take(h,"low")  || take(b,"low");
-    let gB = take(b,"low")    || take(mm,"low")  || take(mp,"low") || take(h,"low");
+    let gB  = take(b,"low")   || take(mm,"low")  || take(mp,"low") || take(h,"low");
 
     const pack = [gH, gM1, gM2, gB].filter(Boolean);
     if (pack[0]) pack[0].role = "H";
@@ -138,14 +138,14 @@ function genererGroupesZenos(){
 
   const restants = [...h, ...mp, ...mm, ...b];
 
-  // On tente un équilibrage “mixité” automatique minimal (swaps même rôle), puis on proposera des suggestions
+  // Équilibrage auto minimal (swaps même rôle) pour atteindre au moins 1F + 1G
   balanceMixiteAuto(groupes);
 
   // Mémorise l’état
   window._zenosGroupes = groupes;
   window._zenosRestants = restants;
 
-  // Calcule les suggestions restantes (si certains groupes ne sont toujours pas mixtes)
+  // Suggestions restantes (si certains groupes ne sont toujours pas mixtes)
   const suggestions = computeSwapSuggestions(groupes);
 
   renderTableauGroupes(groupes, restants, suggestions);
@@ -169,25 +169,21 @@ function indexByRole(groups){
 // Petit passage d’équilibrage auto : si un groupe n’a pas F (ou pas G), on essaie UN swap même rôle
 function balanceMixiteAuto(groupes){
   const idx = indexByRole(groupes);
-
   for (let gi=0; gi<groupes.length; gi++){
     const g = groupes[gi], c = countFG(g);
     if (c.F===0 || c.G===0){
       const need = (c.F===0) ? "F" : "G";
       const have = (c.F===0) ? "G" : "F";
-      // tente un seul swap : remplace 1 membre du sexe “en trop” par même rôle du sexe manquant
       for (let ei=0; ei<g.length; ei++){
         const e = g[ei]; if (e.sexe !== have) continue;
         const role = e.role || "M+";
         const donors = idx[role][need].filter(p => p.gi !== gi);
-        // pour éviter de casser l’autre groupe : on préfère un donneur dont le groupe a au moins 2 du sexe à donner
         const donor = donors.find(p => {
           const oc = countFG(groupes[p.gi]);
           return (need==="F" ? oc.F : oc.G) >= 2;
         }) || donors[0];
         if (donor){
-          const d = groupes[donor.gi][donor.ei]; // élève donneur
-          // swap
+          const d = groupes[donor.gi][donor.ei];
           groupes[gi][ei] = d;
           groupes[donor.gi][donor.ei] = e;
           break;
@@ -201,8 +197,6 @@ function balanceMixiteAuto(groupes){
 function computeSwapSuggestions(groupes){
   const res = [];
   const roles = ["H","M+","M-","B"];
-
-  // repère groupes à problème
   const needs = groupes.map((g,gi) => {
     const c = countFG(g);
     return {gi, F:c.F, G:c.G};
@@ -212,17 +206,13 @@ function computeSwapSuggestions(groupes){
     if (F===0 || G===0){
       const want = (F===0) ? "F" : "G";
       const give = (F===0) ? "G" : "F";
-      // Essaie un échange sur chaque rôle
       for (const role of roles){
         const aIdx = groupes[gi].findIndex(e => e.sexe===give && (e.role||"M+")===role);
         if (aIdx === -1) continue;
-        // chercher un groupe donneur avec même rôle et sexe voulu
         for (let gj=0; gj<groupes.length; gj++){
           if (gj===gi) continue;
           const bIdx = groupes[gj].findIndex(e => e.sexe===want && (e.role||"M+")===role);
           if (bIdx === -1) continue;
-
-          // éviter que le donneur devienne lui-même 0 du sexe opposé
           const cj = countFG(groupes[gj]);
           if ((want==="F" ? cj.F : cj.G) < 2) continue;
 
@@ -232,8 +222,7 @@ function computeSwapSuggestions(groupes){
             b: {gi:gj, ei:bIdx, nom:B.nom, prenom:B.prenom, role:role, sexe:B.sexe},
             label: `Échanger ${A.prenom} ${A.nom} (${A.sexe}, ${role}) du Groupe ${gi+1} ↔ ${B.prenom} ${B.nom} (${B.sexe}, ${role}) du Groupe ${gj+1}`
           });
-          // 1 suggestion par rôle suffit
-          break;
+          break; // 1 suggestion par rôle suffit
         }
       }
     }
@@ -245,13 +234,10 @@ function computeSwapSuggestions(groupes){
 function zenosApplySwap(idx){
   const suggs = computeSwapSuggestions(window._zenosGroupes);
   const s = suggs[idx]; if (!s) return;
-
   const gA = window._zenosGroupes[s.a.gi], gB = window._zenosGroupes[s.b.gi];
   const tmp = gA[s.a.ei];
   gA[s.a.ei] = gB[s.b.ei];
   gB[s.b.ei] = tmp;
-
-  // Re-render
   const newSugg = computeSwapSuggestions(window._zenosGroupes);
   renderTableauGroupes(window._zenosGroupes, window._zenosRestants, newSugg);
 }
@@ -347,7 +333,7 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
       btn.textContent = "Appliquer";
       btn.style.marginLeft = "8px";
       btn.style.padding = "2px 8px";
-      btn.style.border = "1px solid #aaa";
+      btn.style.border = "1px solid "#aaa";
       btn.style.borderRadius = "6px";
       btn.style.background = "#f2f2f2";
       btn.onclick = () => zenosApplySwap(i);
@@ -366,32 +352,28 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
 function exporterGroupesCSV(){
   const table = document.querySelector("table.zenos-unique");
   if (!table) return;
+
   const rows = table.querySelectorAll("tbody tr");
   const csv = [];
   csv.push(["Groupe","Nom","Prénom","Classe","Sexe","VMA","Distance"].join(","));
   let currentGroup = 0;
+
   for (const tr of rows){
+    if (tr.classList.contains("separator-row")) continue; // ignore la ligne séparatrice
     const tds = tr.querySelectorAll("td");
-    if (!tds.length) continue;
-    if (tds.length === 7) { // première ligne d’un groupe
+
+    if (tds.length >= 7) { // première ligne d’un groupe (avec cellule "Groupe")
       currentGroup++;
-      const nom = tds[1].textContent.trim();
-      const pre = tds[2].textContent.trim();
-      const cla = tds[3].textContent.trim();
-      const sex = tds[4].textContent.trim();
-      const vma = tds[5].textContent.trim();
-      const dis = tds[6].textContent.trim();
-      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(csvSafe).join(","));
+      const cells = Array.from(tds).slice(1, 7).map(td => td.textContent.trim());
+      csv.push([`Groupe ${currentGroup}`, ...cells].map(csvSafe).join(","));
+    } else if (tds.length >= 6) { // autres lignes du groupe
+      const cells = Array.from(tds).slice(0, 6).map(td => td.textContent.trim());
+      csv.push([`Groupe ${currentGroup}`, ...cells].map(csvSafe).join(","));
     } else {
-      const nom = tds[0].textContent.trim();
-      const pre = tds[1].textContent.trim();
-      const cla = tds[2].textContent.trim();
-      const sex = tds[3].textContent.trim();
-      const vma = tds[4].textContent.trim();
-      const dis = tds[5].textContent.trim();
-      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(csvSafe).join(","));
+      continue;
     }
   }
+
   const blob = new Blob(["\uFEFF"+csv.join("\n")], {type:"text/csv;charset=utf-8;"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -421,32 +403,36 @@ function exporterGroupesPDF(){ imprimerGroupes(); }
 function envoyerGroupesParMail(){
   const table = document.querySelector("table.zenos-unique");
   if (!table) return;
+
   const classeTitre = (document.getElementById("titre-classe")?.textContent || "").trim();
   const subject = "Groupes ZENOS TOUR" + (classeTitre ? " – " + classeTitre : "");
 
   const rows = table.querySelectorAll("tbody tr");
   const lignes = [];
-  lignes.push("Bonjour,");
-  lignes.push("");
+  lignes.push("Bonjour,","");
   if (classeTitre) lignes.push(classeTitre);
-  lignes.push("Groupes ZENOS :");
-  lignes.push("");
+  lignes.push("Groupes ZENOS :","");
 
   let currentGroup = 0;
   for (const tr of rows){
+    if (tr.classList.contains("separator-row")) continue; // ignore
     const tds = tr.querySelectorAll("td");
-    if (!tds.length) continue;
-    if (tds.length === 7){ currentGroup++; lignes.push("Groupe " + currentGroup + " :"); }
-    const start = (tds.length === 7) ? 1 : 0;
-    const nom = tds[start+0].textContent.trim();
-    const pre = tds[start+1].textContent.trim();
-    if (nom || pre) lignes.push(" - " + nom + " " + pre);
-    if (tds.length === 7) lignes.push("");
+
+    if (tds.length >= 7) { // première ligne d’un groupe
+      currentGroup++;
+      lignes.push("Groupe " + currentGroup + " :");
+      const nom = tds[1].textContent.trim();
+      const pre = tds[2].textContent.trim();
+      if (nom || pre) lignes.push(" - " + nom + " " + pre);
+      lignes.push("");
+    } else if (tds.length >= 6) { // autres lignes
+      const nom = tds[0].textContent.trim();
+      const pre = tds[1].textContent.trim();
+      if (nom || pre) lignes.push(" - " + nom + " " + pre);
+    }
   }
 
-  lignes.push("");
-  lignes.push("Cordialement,");
-  lignes.push("L’équipe ScanProf");
+  lignes.push("","Cordialement,","L’équipe ScanProf");
 
   const bodyText = lignes.join("\n");
   const mailto = "mailto:?subject=" + encodeURIComponent(subject) +
