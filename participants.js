@@ -1,12 +1,25 @@
 // === Etat en mémoire pour le tri/filtre ===
-let _elevesBrut = [];
-let _vueCourante = [];
+let _elevesBrut = [];   // données RAW depuis localStorage
+let _vueCourante = [];  // vue “augmentée” (T1..Tn, etc.)
 
-// --- Helpers ---
-// Calcule l’ensemble des colonnes présentes (standard d’abord si dispo, puis autres clés en alpha)
+// ------------ Helpers ------------
+function isSplitKey(key="") {
+  const k = key.toLowerCase();
+  return k.includes("interm") || k.includes("split");
+}
+
+function parseSplits(val) {
+  if (val == null) return [];
+  if (Array.isArray(val)) return val.map(v => String(v).trim()).filter(Boolean);
+  const s = String(val);
+  // virgule ou point-virgule
+  return s.split(/[;,]\s*/).map(x => x.trim()).filter(Boolean);
+}
+
+// Calcule colonnes (standard d’abord si présentes, puis autres clés alpha)
 function allColumnKeys(rows) {
   if (!rows || !rows.length) return [];
-  const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma","intermediaires","temps_total"];
+  const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma","temps_total"];
   const set = new Set();
   rows.forEach(r => Object.keys(r || {}).forEach(k => set.add(k)));
   const others = Array.from(set)
@@ -15,12 +28,54 @@ function allColumnKeys(rows) {
   return [...standard.filter(k => set.has(k)), ...others];
 }
 
-// Améliore le rendu de certaines cellules (splits/intermédiaires, objets, listes…)
+// Crée une vue “augmentée” avec T1..Tn si un champ split est présent
+function augmentData(rows) {
+  if (!rows || !rows.length) return [];
+
+  // repère toutes les clés candidates (intermediaires, split…)
+  const splitKeys = new Set();
+  rows.forEach(r => Object.keys(r || {}).forEach(k => { if (isSplitKey(k)) splitKeys.add(k); }));
+
+  if (splitKeys.size === 0) return rows.map(r => ({...r}));
+
+  // calcule le nb max de splits toutes lignes confondues
+  let maxSplits = 0;
+  rows.forEach(r => {
+    for (const k of splitKeys) {
+      const n = parseSplits(r[k]).length;
+      if (n > maxSplits) maxSplits = n;
+    }
+  });
+
+  // génère T1..Tn
+  const tCols = Array.from({length:maxSplits}, (_,i)=>`T${i+1}`);
+
+  // construit les lignes augmentées
+  const out = rows.map(r => {
+    const obj = {...r};
+    let hadSplits = false;
+    for (const k of splitKeys) {
+      const arr = parseSplits(r[k]);
+      hadSplits = hadSplits || arr.length>0;
+      tCols.forEach((tName, idx) => {
+        obj[tName] = arr[idx] ?? obj[tName] ?? ""; // si plusieurs champs split, on remplit sans écraser une valeur déjà posée
+      });
+    }
+    // si on a créé au moins un T*, on supprime la/les colonnes split originales pour plus de lisibilité
+    if (hadSplits) {
+      for (const k of splitKeys) delete obj[k];
+    }
+    return obj;
+  });
+
+  return out;
+}
+
+// Rendu de cellules (pills pour listes résiduelles, objets/arrays aplatis)
 function formatCellValue(key, val) {
   if (val == null) return "";
   const k = (key || "").toLowerCase();
 
-  // Détecte listes séparées par virgule/point-virgule : affiche en “pills” empilés
   if (typeof val === "string" && /[,;]/.test(val) && (k.includes("inter") || k.includes("split") || k.includes("temps"))) {
     const parts = val.split(/[;,]\s*/).filter(Boolean);
     return parts.map(s =>
@@ -28,7 +83,6 @@ function formatCellValue(key, val) {
     ).join("<br>");
   }
 
-  // Aplatissement simple si array/objet
   if (Array.isArray(val)) return val.map(v => formatCellValue(k, v)).join("<br>");
   if (typeof val === "object") {
     return Object.entries(val).map(([kk, vv]) => `<div><strong>${kk}:</strong> ${formatCellValue(kk, vv)}</div>`).join("");
@@ -37,25 +91,26 @@ function formatCellValue(key, val) {
   return String(val);
 }
 
-// -------- Initialisation --------
+// ------------ Initialisation ------------
 function afficherParticipants() {
   _elevesBrut = JSON.parse(localStorage.getItem("eleves") || "[]");
-  _vueCourante = _elevesBrut.slice();
+
+  // construit la vue augmentée (T1..Tn)
+  _vueCourante = augmentData(_elevesBrut);
 
   const triSelect = document.getElementById("tri-select");
-
-  // Alimente le menu de tri d'après l’union des clés présentes
-  if (_elevesBrut.length > 0) {
-    const keys = allColumnKeys(_elevesBrut);
-    triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
-  } else {
-    triSelect.innerHTML = "";
+  // Menu de tri basé sur l’union des clés de la vue augmentée
+  let keys = allColumnKeys(_vueCourante);
+  // si T1 existe, on masque toute clé split résiduelle
+  if (keys.some(k => /^T\d+$/.test(k))) {
+    keys = keys.filter(k => !isSplitKey(k));
   }
+  triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
 
   updateTable(_vueCourante);
 }
 
-// -------- Rendu tableau avec colonnes dynamiques --------
+// ------------ Rendu tableau ------------
 function updateTable(data) {
   const thead = document.getElementById("table-head");
   const tbody = document.getElementById("participants-body");
@@ -67,44 +122,51 @@ function updateTable(data) {
     return;
   }
 
-  const cols = allColumnKeys(data);
+  // colonnes depuis la vue augmentée
+  let cols = allColumnKeys(data);
+  if (cols.some(k => /^T\d+$/.test(k))) {
+    cols = cols.filter(k => !isSplitKey(k)); // masque ‘intermediaires’ si T* présent
+  }
 
-  // Header
   thead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr>`;
 
-  // Body
   tbody.innerHTML = data.map((row, i) => {
     const tds = cols.map(k => formatCellValue(k, row[k])).join("</td><td>");
     return `<tr class="${i % 2 === 0 ? 'pair' : 'impair'}"><td>${tds}</td></tr>`;
   }).join("");
 }
 
-// -------- Filtre texte --------
+// ------------ Filtre texte ------------
 function filtrerTexte() {
   const q = (document.getElementById("filtre-txt").value || "").toLowerCase().trim();
   _elevesBrut = JSON.parse(localStorage.getItem("eleves") || "[]");
 
+  let filtered;
   if (!q) {
-    _vueCourante = _elevesBrut.slice();
-    updateTable(_vueCourante);
-    return;
+    filtered = _elevesBrut.slice();
+  } else {
+    filtered = _elevesBrut.filter(obj => {
+      for (const k in obj) {
+        const val = (obj[k] == null ? "" : String(obj[k])).toLowerCase();
+        if (val.indexOf(q) !== -1) return true;
+      }
+      return false;
+    });
   }
 
-  _vueCourante = _elevesBrut.filter(obj => {
-    for (const k in obj) {
-      const val = (obj[k] == null ? "" : String(obj[k])).toLowerCase();
-      if (val.indexOf(q) !== -1) return true;
-    }
-    return false;
-  });
+  // met à jour la vue augmentée + menu de tri
+  _vueCourante = augmentData(filtered);
+  let keys = allColumnKeys(_vueCourante);
+  if (keys.some(k => /^T\d+$/.test(k))) keys = keys.filter(k => !isSplitKey(k));
+  document.getElementById("tri-select").innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
 
   updateTable(_vueCourante);
 }
 
-// -------- Tri dynamique --------
+// ------------ Tri dynamique ------------
 function trierParticipants() {
   const critere = document.getElementById("tri-select").value;
-  let data = _vueCourante.length ? _vueCourante.slice() : JSON.parse(localStorage.getItem("eleves") || "[]");
+  let data = _vueCourante.length ? _vueCourante.slice() : augmentData(JSON.parse(localStorage.getItem("eleves") || "[]"));
   if (data.length === 0) return;
 
   data.sort((a, b) => {
@@ -119,12 +181,16 @@ function trierParticipants() {
   updateTable(data);
 }
 
-// -------- Export CSV --------
+// ------------ Export CSV (avec T1..Tn) ------------
 function exporterCSV() {
-  const data = _vueCourante.length ? _vueCourante : JSON.parse(localStorage.getItem("eleves") || "[]");
+  const data = _vueCourante.length ? _vueCourante : augmentData(JSON.parse(localStorage.getItem("eleves") || "[]"));
   if (!data.length) return;
 
-  const header = allColumnKeys(data);
+  let header = allColumnKeys(data);
+  if (header.some(k => /^T\d+$/.test(k))) {
+    header = header.filter(k => !isSplitKey(k)); // masque ‘intermediaires’ si T* présent
+  }
+
   const rows = data.map(row => header.map(k => (row[k] ?? "")).join(","));
   const csv = [header.join(","), ...rows].join("\n");
 
@@ -139,7 +205,7 @@ function exporterCSV() {
   URL.revokeObjectURL(url);
 }
 
-// -------- Import CSV --------
+// ------------ Import CSV ------------
 function importerCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -160,19 +226,18 @@ function importerCSV(event) {
 
     localStorage.setItem("eleves", JSON.stringify(data));
     _elevesBrut = data.slice();
-    _vueCourante = data.slice();
+    _vueCourante = augmentData(_elevesBrut);
 
-    // Met à jour tri-select et tableau avec les nouvelles colonnes importées
-    const triSelect = document.getElementById("tri-select");
-    const keys = allColumnKeys(_elevesBrut);
-    triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+    let keys = allColumnKeys(_vueCourante);
+    if (keys.some(k => /^T\d+$/.test(k))) keys = keys.filter(k => !isSplitKey(k));
+    document.getElementById("tri-select").innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
 
     updateTable(_vueCourante);
   };
   reader.readAsText(file);
 }
 
-// -------- Impression (fiable iPad) --------
+// ------------ Impression (fiable iPad) ------------
 function imprimerTableau() {
   const table = document.getElementById("participants-table");
   if (!table) return;
@@ -222,12 +287,14 @@ function imprimerTableau() {
   }, 120);
 }
 
-// -------- Envoi par mail --------
+// ------------ Envoi par mail ------------
 function envoyerParMail() {
-  const data = _vueCourante.length ? _vueCourante : JSON.parse(localStorage.getItem("eleves") || "[]");
+  const data = _vueCourante.length ? _vueCourante : augmentData(JSON.parse(localStorage.getItem("eleves") || "[]"));
   if (!data.length) return;
 
-  const header = allColumnKeys(data);
+  let header = allColumnKeys(data);
+  if (header.some(k => /^T\d+$/.test(k))) header = header.filter(k => !isSplitKey(k));
+
   const lignes = data.map(e => header.map(k => (e[k] ?? "")).join("\t")).join("%0A");
   const entete = header.join("\t");
 
@@ -236,7 +303,7 @@ function envoyerParMail() {
   window.location.href = mailto;
 }
 
-// -------- Réinitialisation --------
+// ------------ Réinitialisation ------------
 function resetData() {
   if (confirm("Voulez-vous vraiment réinitialiser la liste ?")) {
     localStorage.removeItem("eleves");
