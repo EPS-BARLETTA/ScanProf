@@ -1,8 +1,9 @@
-// === Etat en mémoire pour le tri/filtre ===
-let _elevesBrut = [];   // données RAW depuis localStorage
-let _vueCourante = [];  // vue “augmentée” (T1..Tn, etc.)
-let _labels = {};       // labels humains optionnels (via __labels)
-let _types  = {};       // types optionnels (via __types): "time" | "number" | "text"
+// === Etat en mémoire ===
+let _elevesBrut = [];
+let _vueCourante = [];
+let _labels = {};
+let _types  = {};
+let _ordreAsc = true; // ⬅︎ nouvel état pour ↑/↓
 
 // ------------ Helpers méta (labels/types) ------------
 function collectMeta(rows) {
@@ -13,17 +14,12 @@ function collectMeta(rows) {
   });
   return { labels: L, types: T };
 }
-
 function humanLabel(key) {
   if (_labels && _labels[key]) return _labels[key];
-  const map = {
-    nom: "Nom", prenom: "Prénom", classe: "Classe", sexe: "Sexe",
-    distance: "Distance", vitesse: "Vitesse", vma: "VMA",
-    temps_total: "Temps total"
-  };
+  const map = { nom:"Nom", prenom:"Prénom", classe:"Classe", sexe:"Sexe",
+    distance:"Distance", vitesse:"Vitesse", vma:"VMA", temps_total:"Temps total" };
   if (map[key]) return map[key];
-  if (/^t\d+$/i.test(key)) return key.toUpperCase(); // T1..Tn
-  // défaut: remplace _ par espace + capitalise
+  if (/^t\d+$/i.test(key)) return key.toUpperCase();
   return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
@@ -37,8 +33,6 @@ function parseSplits(val) {
   if (Array.isArray(val)) return val.map(v => String(v).trim()).filter(Boolean);
   return String(val).split(/[;,]\s*/).map(x => x.trim()).filter(Boolean);
 }
-
-// colonnes (standard d’abord, puis autres en alpha)
 function allColumnKeys(rows) {
   if (!rows || !rows.length) return [];
   const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma","temps_total"];
@@ -49,8 +43,6 @@ function allColumnKeys(rows) {
     .sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
   return [...standard.filter(k => set.has(k)), ...others];
 }
-
-// Vue “augmentée” avec T1..Tn si un champ split est présent
 function augmentData(rows) {
   if (!rows || !rows.length) return [];
   const splitKeys = new Set();
@@ -58,57 +50,58 @@ function augmentData(rows) {
   if (splitKeys.size === 0) return rows.map(r => ({...r}));
 
   let maxSplits = 0;
-  rows.forEach(r => {
-    for (const k of splitKeys) maxSplits = Math.max(maxSplits, parseSplits(r[k]).length);
-  });
+  rows.forEach(r => { for (const k of splitKeys) maxSplits = Math.max(maxSplits, parseSplits(r[k]).length); });
   const tCols = Array.from({length:maxSplits}, (_,i)=>`T${i+1}`);
 
   return rows.map(r => {
     const obj = {...r};
-    let hadSplits = false;
+    let had = false;
     for (const k of splitKeys) {
-      const arr = parseSplits(r[k]);
-      if (arr.length) hadSplits = true;
-      tCols.forEach((tName, idx) => {
-        if (obj[tName] == null) obj[tName] = arr[idx] ?? "";
-      });
+      const arr = parseSplits(r[k]); if (arr.length) had = true;
+      tCols.forEach((tName, idx) => { if (obj[tName] == null) obj[tName] = arr[idx] ?? ""; });
     }
-    if (hadSplits) { for (const k of splitKeys) delete obj[k]; }
+    if (had) { for (const k of splitKeys) delete obj[k]; }
     return obj;
   });
 }
 
-// ------------ Helpers tri: time/number ------------
+// ------------ Détection temps/nombre pour tri ------------
 function looksLikeTime(v) {
   const s = String(v || "");
-  // hh:mm:ss(.ms) | mm:ss(.ms) | ss(.ms)
   return /^(\d{1,2}:)?\d{1,2}:\d{1,2}(\.\d+)?$/.test(s) || /^\d{1,2}(\.\d+)?$/.test(s);
 }
 function parseTimeToSeconds(v) {
   if (v == null) return Number.POSITIVE_INFINITY;
   const s = String(v).trim();
   if (s.includes(":")) {
-    const parts = s.split(":").map(x=>x.trim());
+    const p = s.split(":").map(x=>x.trim());
     let h=0, m=0, sec=0;
-    if (parts.length === 3) { h = +parts[0]||0; m = +parts[1]||0; sec = parseFloat(parts[2])||0; }
-    else if (parts.length === 2) { m = +parts[0]||0; sec = parseFloat(parts[1])||0; }
-    else { sec = parseFloat(parts[0])||0; }
+    if (p.length === 3) { h=+p[0]||0; m=+p[1]||0; sec=parseFloat(p[2])||0; }
+    else if (p.length === 2) { m=+p[0]||0; sec=parseFloat(p[1])||0; }
+    else { sec=parseFloat(p[0])||0; }
     return h*3600 + m*60 + sec;
   }
-  const n = parseFloat(s);
+  const n = parseFloat(s.replace(/\s/g,'').replace(',', '.'));
   return isNaN(n) ? Number.POSITIVE_INFINITY : n;
 }
-
+function isLikelyNumber(val) {
+  if (val == null) return false;
+  const s = String(val).trim().replace(/\s/g,'').replace(',', '.');
+  return /^-?\d+(\.\d+)?$/.test(s);
+}
+function numericKey(key="") {
+  const k = key.toLowerCase();
+  return k === "vma" || k === "vitesse" || k === "distance";
+}
 function typedSortValue(key, val) {
   const t = (_types && _types[key]) || null;
   if (t === "time" || (!t && (key.toLowerCase()==="temps_total" || /^t\d+$/i.test(key) || looksLikeTime(val)))) {
     return parseTimeToSeconds(val);
   }
-  if (t === "number") {
-    const n = parseFloat(val);
+  if (t === "number" || numericKey(key) || isLikelyNumber(val)) {
+    const n = parseFloat(String(val).trim().replace(/\s/g,'').replace(',', '.'));
     return isNaN(n) ? Number.POSITIVE_INFINITY : n;
   }
-  // fallback: texte
   return String(val ?? "").toLocaleLowerCase();
 }
 
@@ -116,7 +109,6 @@ function typedSortValue(key, val) {
 function formatCellValue(key, val) {
   if (val == null) return "";
   const k = (key || "").toLowerCase();
-
   if (typeof val === "string" && /[,;]/.test(val) && (k.includes("inter") || k.includes("split") || k.includes("temps"))) {
     const parts = val.split(/[;,]\s*/).filter(Boolean);
     return parts.map(s =>
@@ -128,6 +120,29 @@ function formatCellValue(key, val) {
     return Object.entries(val).map(([kk, vv]) => `<div><strong>${kk}:</strong> ${formatCellValue(kk, vv)}</div>`).join("");
   }
   return String(val);
+}
+
+// ------------ UI : bouton ordre ↑/↓ ------------
+function ensureOrdreButton() {
+  if (document.getElementById("ordre-btn")) return;
+  const triSelect = document.getElementById("tri-select");
+  if (!triSelect) return;
+  const btn = document.createElement("button");
+  btn.id = "ordre-btn";
+  btn.type = "button";
+  btn.style.marginLeft = "8px";
+  btn.className = "btn btn-light";
+  updateOrdreButtonText(btn);
+  btn.onclick = () => {
+    _ordreAsc = !_ordreAsc;
+    updateOrdreButtonText(btn);
+    // retrier immédiatement si on a déjà une vue
+    if (_vueCourante && _vueCourante.length) trierParticipants();
+  };
+  triSelect.insertAdjacentElement("afterend", btn);
+}
+function updateOrdreButtonText(btn) {
+  btn.textContent = _ordreAsc ? "↑ Croissant" : "↓ Décroissant";
 }
 
 // ------------ Initialisation ------------
@@ -144,6 +159,7 @@ function afficherParticipants() {
   if (keys.some(k => /^T\d+$/i.test(k))) keys = keys.filter(k => !isSplitKey(k));
   triSelect.innerHTML = keys.map(k => `<option value="${k}">${humanLabel(k)}</option>`).join("");
 
+  ensureOrdreButton();
   updateTable(_vueCourante);
 }
 
@@ -198,7 +214,7 @@ function filtrerTexte() {
   updateTable(_vueCourante);
 }
 
-// ------------ Tri dynamique ------------
+// ------------ Tri dynamique (avec ↑/↓ et détection nombres/temps) ------------
 function trierParticipants() {
   const critere = document.getElementById("tri-select").value;
   let data = _vueCourante.length ? _vueCourante.slice() : augmentData(JSON.parse(localStorage.getItem("eleves") || "[]"));
@@ -207,21 +223,24 @@ function trierParticipants() {
   data.sort((a, b) => {
     const va = typedSortValue(critere, a[critere]);
     const vb = typedSortValue(critere, b[critere]);
-    if (typeof va === "number" && typeof vb === "number") return va - vb;
-    return String(va).localeCompare(String(vb), "fr", { sensitivity: "base" });
+    if (typeof va === "number" && typeof vb === "number") {
+      return _ordreAsc ? (va - vb) : (vb - va);
+    }
+    const cmp = String(va).localeCompare(String(vb), "fr", { sensitivity: "base", numeric: true });
+    return _ordreAsc ? cmp : -cmp;
   });
 
   _vueCourante = data;
   updateTable(data);
 }
 
-// ------------ Export CSV (avec T1..Tn) ------------
+// ------------ Export CSV (inchangé, avec T1..Tn) ------------
 function exporterCSV() {
   const data = _vueCourante.length ? _vueCourante : augmentData(JSON.parse(localStorage.getItem("eleves") || "[]"));
   if (!data.length) return;
 
   let header = allColumnKeys(data);
-  if (header.some(k => /^T\d+$/i.test(k))) header = header.filter(k => !isSplitKey(k)); // masque ‘intermediaires’ si T* présent
+  if (header.some(k => /^T\d+$/i.test(k))) header = header.filter(k => !isSplitKey(k));
 
   const rows = data.map(row => header.map(k => (row[k] ?? "")).join(","));
   const csv = [header.join(","), ...rows].join("\n");
@@ -234,7 +253,7 @@ function exporterCSV() {
   URL.revokeObjectURL(url);
 }
 
-// ------------ Import CSV ------------
+// ------------ Import CSV (inchangé) ------------
 function importerCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -269,12 +288,11 @@ function importerCSV(event) {
   reader.readAsText(file);
 }
 
-// ------------ Impression (fiable iPad) ------------
+// ------------ Impression (aperçu + bouton) ------------
 function imprimerTableau() {
   const table = document.getElementById("participants-table");
   if (!table) return;
 
-  // Ouvre un onglet d’aperçu avec un bouton “Imprimer” (évite le blocage iOS d’impression auto)
   const win = window.open("", "_blank");
   if (!win) { alert("Veuillez autoriser l’ouverture de fenêtres pour imprimer."); return; }
 
@@ -308,11 +326,10 @@ function imprimerTableau() {
     </html>
   `);
   win.document.close();
-  // On ESSAIE d’imprimer (sera ignoré si iOS bloque), sinon l’utilisateur clique sur le bouton
   try { win.focus(); win.print(); } catch(e) {}
 }
 
-// ------------ Envoi par mail ------------
+// ------------ Envoi par mail (inchangé) ------------
 function envoyerParMail() {
   const data = _vueCourante.length ? _vueCourante : augmentData(JSON.parse(localStorage.getItem("eleves") || "[]"));
   if (!data.length) return;
