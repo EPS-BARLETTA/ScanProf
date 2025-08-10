@@ -1,11 +1,14 @@
-// zenos.js — Groupes ZENOS : 1H + 2M + 1B, mixité stricte si possible, sinon suggestions
+// zenos.js — Groupes ZENOS : 1H + 2M + 1B, mixité stricte si possible.
+// Ajoute un bloc “Suggestions d’échanges” (swap même rôle) avec bouton “Appliquer”.
+
+// État courant pour pouvoir appliquer les swaps sans regénérer tout
+window._zenosGroupes = [];
+window._zenosRestants = [];
+window._zenosChoixClasse = "__TOUS__";
+
 document.addEventListener("DOMContentLoaded", function () {
   const all = safeParse(localStorage.getItem("eleves")) || [];
-
-  // Normalise les classes une fois
-  for (const e of all) {
-    if (e) e.classe = canonClasse(e.classe || e.Classe || "");
-  }
+  for (const e of all) if (e) e.classe = canonClasse(e.classe || e.Classe || "");
 
   // Remplit le select des classes
   const select = document.getElementById("classe-select");
@@ -23,11 +26,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Bouton générer
   const btn = document.getElementById("btn-generer-zenos");
   if (btn) btn.addEventListener("click", genererGroupesZenos);
 
-  // Si 1 seule classe, on pré-sélectionne + on génère
   const titre = document.getElementById("titre-classe");
   if (select && uniqueClasses(all).length === 1) {
     select.value = uniqueClasses(all)[0];
@@ -48,25 +49,20 @@ function canonClasse(raw){
   s = s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");  // accents
   s = s.replace(/EME|ÈME/g,"");                           // EME
   s = s.replace(/[^A-Z0-9]/g,"");                         // suppr espaces/points
-  // On garde “niveau+lettre” si possible (ex: 5A, 4B…), sinon s brut
   const m = s.match(/^(\d{1,2})([A-Z])$/);
   return m ? (m[1]+m[2]) : s;
 }
-
 function uniqueClasses(arr){
   const set = new Set();
   for(const e of arr){ if(e && e.classe) set.add(e.classe); }
   return Array.from(set);
 }
-
-function esc(s){ return String(s==null?"":s)
-  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function appendCell(tr, val){ const td=document.createElement("td"); td.textContent=val==null?"":String(val); tr.appendChild(td); }
-
 function normSexe(s){
   const x = String(s||"").trim().toUpperCase();
   if (x.startsWith("F")) return "F";
-  if (x.startsWith("G") || x.startsWith("M")) return "G"; // selon saisies
+  if (x.startsWith("G") || x.startsWith("M")) return "G";
   return "X"; // inconnu
 }
 
@@ -80,8 +76,6 @@ function quartileBuckets(listAsc){
   const H = listAsc.slice(q3);
   return {H, Mplus, Mminus, B};
 }
-
-// Prend un élément d’un “rôle” (bucket). sens = "high" (pop) ou "low" (shift)
 function take(bucket, sens="low"){
   if (!bucket.length) return null;
   return sens==="high" ? bucket.pop() : bucket.shift();
@@ -90,11 +84,11 @@ function take(bucket, sens="low"){
 // ===== Coeur : génération des groupes =====
 function genererGroupesZenos(){
   const all = safeParse(localStorage.getItem("eleves")) || [];
-  // normalise encore au cas où
   for(const e of all){ if(e) e.classe = canonClasse(e.classe || e.Classe || ""); }
 
   const select = document.getElementById("classe-select");
   const choix = select && select.value ? select.value : "__TOUS__";
+  window._zenosChoixClasse = choix;
 
   // Filtre candidats
   let cand = [];
@@ -117,17 +111,15 @@ function genererGroupesZenos(){
 
   if (cand.length < 4){ alert("Pas assez d'élèves valides (VMA) pour former des groupes."); return; }
 
-  // Tri ascendant pour calculer les quartiles
+  // Tri ascendant → quartiles
   cand.sort((a,b)=> a.vma - b.vma);
-  const {H, Mplus, Mminus, B} = quartileBuckets(cand);   // asc → B..H
+  const {H, Mplus, Mminus, B} = quartileBuckets(cand);
 
-  // Nombre de groupes complets
   const G = Math.floor(cand.length / 4);
   const groupes = [];
-  // Copie des buckets (on va dépiler)
   const h = H.slice(), mp = Mplus.slice(), mm = Mminus.slice(), b = B.slice();
 
-  // Construction “idéal” : [H, Mplus, Mminus, B]
+  // Construction “idéale” : [H, M+, M-, B]
   for (let g=0; g<G; g++){
     let gH = take(h, "high") || take(mp,"high") || take(mm,"high") || take(b,"high");
     let gM1 = take(mp,"high") || take(mm,"high") || take(h,"high") || take(b,"high");
@@ -135,7 +127,6 @@ function genererGroupesZenos(){
     let gB = take(b,"low")    || take(mm,"low")  || take(mp,"low") || take(h,"low");
 
     const pack = [gH, gM1, gM2, gB].filter(Boolean);
-    // Tag “rôle” pour équilibrage ultérieur (utile pour swaps propres)
     if (pack[0]) pack[0].role = "H";
     if (pack[1]) pack[1].role = "M+";
     if (pack[2]) pack[2].role = "M-";
@@ -145,76 +136,124 @@ function genererGroupesZenos(){
     else break;
   }
 
-  // Restants (jamais de groupes incomplets)
   const restants = [...h, ...mp, ...mm, ...b];
 
-  // Équilibrage mixité (au moins 1F + 1G si c’est mathématiquement possible)
-  const suggestions = balanceMixite(groupes);
+  // On tente un équilibrage “mixité” automatique minimal (swaps même rôle), puis on proposera des suggestions
+  balanceMixiteAuto(groupes);
+
+  // Mémorise l’état
+  window._zenosGroupes = groupes;
+  window._zenosRestants = restants;
+
+  // Calcule les suggestions restantes (si certains groupes ne sont toujours pas mixtes)
+  const suggestions = computeSwapSuggestions(groupes);
 
   renderTableauGroupes(groupes, restants, suggestions);
 }
 
-// Essaie d’assurer au moins 1F + 1G par groupe via des swaps “même rôle”
-function balanceMixite(groupes){
-  const sug = []; // suggestions textuelles si on n’y arrive pas
-
-  function countFG(g){
-    let F=0,G=0;
-    for (const e of g){ if (e.sexe==="F") F++; else if (e.sexe==="G") G++; }
-    return {F,G};
-  }
-
-  // Indexe candidats par rôle et sexe
-  function indexByRole(groups){
-    const idx = {H:{F:[],G:[]}, "M+":{F:[],G:[]}, "M-":{F:[],G:[]}, B:{F:[],G:[]}};
-    groups.forEach((g,gi)=>{
-      g.forEach((e,ei)=>{
-        const r = e.role || "M+";
-        if (e.sexe==="F"||e.sexe==="G") idx[r][e.sexe].push({gi, ei});
-      });
+// ===== Mixité : auto-fix minimal + suggestions =====
+function countFG(g){
+  let F=0,G=0; for (const e of g){ if (e.sexe==="F") F++; else if (e.sexe==="G") G++; } return {F,G};
+}
+function indexByRole(groups){
+  const idx = {H:{F:[],G:[]}, "M+":{F:[],G:[]}, "M-":{F:[],G:[]}, B:{F:[],G:[]}};
+  groups.forEach((g,gi)=>{
+    g.forEach((e,ei)=>{
+      const r = e.role || "M+";
+      if (e.sexe==="F"||e.sexe==="G") idx[r][e.sexe].push({gi, ei});
     });
-    return idx;
-  }
+  });
+  return idx;
+}
 
-  // premier passage : corriger les groupes “sans F” ou “sans G”
-  let changed = true; let passes = 0;
-  while (changed && passes<4){
-    changed = false; passes++;
-    const idx = indexByRole(groupes);
+// Petit passage d’équilibrage auto : si un groupe n’a pas F (ou pas G), on essaie UN swap même rôle
+function balanceMixiteAuto(groupes){
+  const idx = indexByRole(groupes);
 
-    for (let gi=0; gi<groupes.length; gi++){
-      const g = groupes[gi], c = countFG(g);
-      if (c.F===0 || c.G===0){
-        // cherche un swap rôle à rôle
-        let done = false;
-        for (const eIdx in g){
-          const e = g[eIdx];
-          const need = (c.F===0) ? "F" : "G";
-          const have = (c.F===0) ? "G" : "F";
-          if (e.sexe !== have) continue; // on ne remplace que le sexe “en trop”
-          const role = e.role || "M+";
-          const pool = idx[role][need]; // donneur dans même rôle
-          const donor = pool.find(p => p.gi!==gi);
-          if (donor){
-            const d = groupes[donor.gi][donor.ei];
-            // swap
-            groupes[gi][eIdx] = d;
-            groupes[donor.gi][donor.ei] = e;
-            changed = true; done = true;
-            break;
-          }
-        }
-        if (!changed){
-          // échec : on proposera une suggestion
-          const want = (c.F===0) ? "F" : "G";
-          sug.push(`Groupe ${gi+1} : ajouter 1 ${want} (échange avec un autre groupe dans le même quartile si possible).`);
+  for (let gi=0; gi<groupes.length; gi++){
+    const g = groupes[gi], c = countFG(g);
+    if (c.F===0 || c.G===0){
+      const need = (c.F===0) ? "F" : "G";
+      const have = (c.F===0) ? "G" : "F";
+      // tente un seul swap : remplace 1 membre du sexe “en trop” par même rôle du sexe manquant
+      for (let ei=0; ei<g.length; ei++){
+        const e = g[ei]; if (e.sexe !== have) continue;
+        const role = e.role || "M+";
+        const donors = idx[role][need].filter(p => p.gi !== gi);
+        // pour éviter de casser l’autre groupe : on préfère un donneur dont le groupe a au moins 2 du sexe à donner
+        const donor = donors.find(p => {
+          const oc = countFG(groupes[p.gi]);
+          return (need==="F" ? oc.F : oc.G) >= 2;
+        }) || donors[0];
+        if (donor){
+          const d = groupes[donor.gi][donor.ei]; // élève donneur
+          // swap
+          groupes[gi][ei] = d;
+          groupes[donor.gi][donor.ei] = e;
+          break;
         }
       }
     }
   }
+}
 
-  // Optionnel : tendre vers 2/2 (on laisse simple, l’exigence est “mixte”)
-  return sug;
+// Suggestions restantes (échanges cliquables), même rôle uniquement
+function computeSwapSuggestions(groupes){
+  const res = [];
+  const roles = ["H","M+","M-","B"];
+
+  // repère groupes à problème
+  const needs = groupes.map((g,gi) => {
+    const c = countFG(g);
+    return {gi, F:c.F, G:c.G};
+  });
+
+  for (const {gi, F, G} of needs){
+    if (F===0 || G===0){
+      const want = (F===0) ? "F" : "G";
+      const give = (F===0) ? "G" : "F";
+      // Essaie un échange sur chaque rôle
+      for (const role of roles){
+        const aIdx = groupes[gi].findIndex(e => e.sexe===give && (e.role||"M+")===role);
+        if (aIdx === -1) continue;
+        // chercher un groupe donneur avec même rôle et sexe voulu
+        for (let gj=0; gj<groupes.length; gj++){
+          if (gj===gi) continue;
+          const bIdx = groupes[gj].findIndex(e => e.sexe===want && (e.role||"M+")===role);
+          if (bIdx === -1) continue;
+
+          // éviter que le donneur devienne lui-même 0 du sexe opposé
+          const cj = countFG(groupes[gj]);
+          if ((want==="F" ? cj.F : cj.G) < 2) continue;
+
+          const A = groupes[gi][aIdx], B = groupes[gj][bIdx];
+          res.push({
+            a: {gi, ei:aIdx, nom:A.nom, prenom:A.prenom, role:role, sexe:A.sexe},
+            b: {gi:gj, ei:bIdx, nom:B.nom, prenom:B.prenom, role:role, sexe:B.sexe},
+            label: `Échanger ${A.prenom} ${A.nom} (${A.sexe}, ${role}) du Groupe ${gi+1} ↔ ${B.prenom} ${B.nom} (${B.sexe}, ${role}) du Groupe ${gj+1}`
+          });
+          // 1 suggestion par rôle suffit
+          break;
+        }
+      }
+    }
+  }
+  return res;
+}
+
+// Appliquer un swap depuis une suggestion
+function zenosApplySwap(idx){
+  const suggs = computeSwapSuggestions(window._zenosGroupes);
+  const s = suggs[idx]; if (!s) return;
+
+  const gA = window._zenosGroupes[s.a.gi], gB = window._zenosGroupes[s.b.gi];
+  const tmp = gA[s.a.ei];
+  gA[s.a.ei] = gB[s.b.ei];
+  gB[s.b.ei] = tmp;
+
+  // Re-render
+  const newSugg = computeSwapSuggestions(window._zenosGroupes);
+  renderTableauGroupes(window._zenosGroupes, window._zenosRestants, newSugg);
 }
 
 // ===== Rendu =====
@@ -254,7 +293,6 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
       appendCell(tr, e.distance);
       tbody.appendChild(tr);
     }
-    // ligne séparatrice
     const sep = document.createElement("tr");
     sep.className = "separator-row";
     const sepTd = document.createElement("td");
@@ -289,27 +327,42 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
     restantsDiv.appendChild(tabR);
   }
 
-  // Suggestions mixité (si besoin)
+  // Suggestions d’échanges (mixité)
   if (suggestions && suggestions.length && restantsDiv){
     const box = document.createElement("div");
-    box.style.marginTop = "8px";
-    box.style.color = "#b35b00";
-    box.style.fontWeight = "600";
-    box.textContent = "Mixité partielle : suggestions d’échanges";
+    box.style.marginTop = "10px";
+    box.style.padding = "10px";
+    box.style.border = "1px solid #f2c200";
+    box.style.background = "#fff8db";
+    box.style.borderRadius = "8px";
+    box.innerHTML = "<strong>Mixité partielle :</strong> suggestions d’échanges (même rôle)";
     restantsDiv.appendChild(box);
 
     const ul = document.createElement("ul");
-    ul.style.marginTop = "4px";
-    for (const s of suggestions){
+    ul.style.marginTop = "6px";
+    suggestions.forEach((s, i) => {
       const li = document.createElement("li");
-      li.textContent = s;
+      li.style.margin = "6px 0";
+      const btn = document.createElement("button");
+      btn.textContent = "Appliquer";
+      btn.style.marginLeft = "8px";
+      btn.style.padding = "2px 8px";
+      btn.style.border = "1px solid #aaa";
+      btn.style.borderRadius = "6px";
+      btn.style.background = "#f2f2f2";
+      btn.onclick = () => zenosApplySwap(i);
+
+      const span = document.createElement("span");
+      span.textContent = " " + s.label;
+      li.appendChild(span);
+      li.appendChild(btn);
       ul.appendChild(li);
-    }
+    });
     restantsDiv.appendChild(ul);
   }
 }
 
-// ===== Exports (inchangés côté UI) =====
+// ===== Exports =====
 function exporterGroupesCSV(){
   const table = document.querySelector("table.zenos-unique");
   if (!table) return;
@@ -317,32 +370,26 @@ function exporterGroupesCSV(){
   const csv = [];
   csv.push(["Groupe","Nom","Prénom","Classe","Sexe","VMA","Distance"].join(","));
   let currentGroup = 0;
-  let countInGroup = 0;
   for (const tr of rows){
     const tds = tr.querySelectorAll("td");
     if (!tds.length) continue;
-    if (tds.length === 7) { // avec cellule "Groupe"
-      currentGroup++; countInGroup = 0;
+    if (tds.length === 7) { // première ligne d’un groupe
+      currentGroup++;
       const nom = tds[1].textContent.trim();
       const pre = tds[2].textContent.trim();
       const cla = tds[3].textContent.trim();
       const sex = tds[4].textContent.trim();
       const vma = tds[5].textContent.trim();
       const dis = tds[6].textContent.trim();
-      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(qq=> {
-        let t=qq; if (/,/.test(t)) t='"'+t.replace(/"/g,'""')+'"'; return t;
-      }).join(","));
+      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(csvSafe).join(","));
     } else {
-      countInGroup++;
       const nom = tds[0].textContent.trim();
       const pre = tds[1].textContent.trim();
       const cla = tds[2].textContent.trim();
       const sex = tds[3].textContent.trim();
       const vma = tds[4].textContent.trim();
       const dis = tds[5].textContent.trim();
-      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(qq=>{
-        let t=qq; if (/,/.test(t)) t='"'+t.replace(/"/g,'""')+'"'; return t;
-      }).join(","));
+      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(csvSafe).join(","));
     }
   }
   const blob = new Blob(["\uFEFF"+csv.join("\n")], {type:"text/csv;charset=utf-8;"});
@@ -351,6 +398,7 @@ function exporterGroupesCSV(){
   a.download = "groupes_zenos.csv";
   a.click();
 }
+function csvSafe(t){ let s=String(t); if (/,/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }
 
 function imprimerGroupes(){
   const zone = document.getElementById("groupes-panel");
@@ -368,10 +416,8 @@ function imprimerGroupes(){
   win.document.close();
   try { win.focus(); win.print(); } catch(e){}
 }
-
 function exporterGroupesPDF(){ imprimerGroupes(); }
 
-// Mail : sujet + groupes propres (sans %0A en double)
 function envoyerGroupesParMail(){
   const table = document.querySelector("table.zenos-unique");
   if (!table) return;
@@ -395,7 +441,7 @@ function envoyerGroupesParMail(){
     const nom = tds[start+0].textContent.trim();
     const pre = tds[start+1].textContent.trim();
     if (nom || pre) lignes.push(" - " + nom + " " + pre);
-    if (tds.length === 7) lignes.push(""); // ligne blanche après 4 élèves
+    if (tds.length === 7) lignes.push("");
   }
 
   lignes.push("");
