@@ -1,22 +1,44 @@
 // === Etat en mémoire pour le tri/filtre ===
 let _elevesBrut = [];   // données RAW depuis localStorage
 let _vueCourante = [];  // vue “augmentée” (T1..Tn, etc.)
+let _labels = {};       // labels humains optionnels (via __labels)
+let _types  = {};       // types optionnels (via __types): "time" | "number" | "text"
 
-// ------------ Helpers ------------
-function isSplitKey(key="") {
+// ------------ Helpers méta (labels/types) ------------
+function collectMeta(rows) {
+  const L = {}, T = {};
+  (rows || []).forEach(r => {
+    if (r && r.__labels && typeof r.__labels === "object") Object.assign(L, r.__labels);
+    if (r && r.__types  && typeof r.__types  === "object") Object.assign(T, r.__types);
+  });
+  return { labels: L, types: T };
+}
+
+function humanLabel(key) {
+  if (_labels && _labels[key]) return _labels[key];
+  const map = {
+    nom: "Nom", prenom: "Prénom", classe: "Classe", sexe: "Sexe",
+    distance: "Distance", vitesse: "Vitesse", vma: "VMA",
+    temps_total: "Temps total"
+  };
+  if (map[key]) return map[key];
+  if (/^t\d+$/i.test(key)) return key.toUpperCase(); // T1..Tn
+  // défaut: remplace _ par espace + capitalise
+  return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ------------ Helpers colonnes & splits ------------
+function isSplitKey(key = "") {
   const k = key.toLowerCase();
   return k.includes("interm") || k.includes("split");
 }
-
 function parseSplits(val) {
   if (val == null) return [];
   if (Array.isArray(val)) return val.map(v => String(v).trim()).filter(Boolean);
-  const s = String(val);
-  // virgule ou point-virgule
-  return s.split(/[;,]\s*/).map(x => x.trim()).filter(Boolean);
+  return String(val).split(/[;,]\s*/).map(x => x.trim()).filter(Boolean);
 }
 
-// Calcule colonnes (standard d’abord si présentes, puis autres clés alpha)
+// colonnes (standard d’abord, puis autres en alpha)
 function allColumnKeys(rows) {
   if (!rows || !rows.length) return [];
   const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma","temps_total"];
@@ -28,50 +50,69 @@ function allColumnKeys(rows) {
   return [...standard.filter(k => set.has(k)), ...others];
 }
 
-// Crée une vue “augmentée” avec T1..Tn si un champ split est présent
+// Vue “augmentée” avec T1..Tn si un champ split est présent
 function augmentData(rows) {
   if (!rows || !rows.length) return [];
-
-  // repère toutes les clés candidates (intermediaires, split…)
   const splitKeys = new Set();
   rows.forEach(r => Object.keys(r || {}).forEach(k => { if (isSplitKey(k)) splitKeys.add(k); }));
-
   if (splitKeys.size === 0) return rows.map(r => ({...r}));
 
-  // calcule le nb max de splits toutes lignes confondues
   let maxSplits = 0;
   rows.forEach(r => {
-    for (const k of splitKeys) {
-      const n = parseSplits(r[k]).length;
-      if (n > maxSplits) maxSplits = n;
-    }
+    for (const k of splitKeys) maxSplits = Math.max(maxSplits, parseSplits(r[k]).length);
   });
-
-  // génère T1..Tn
   const tCols = Array.from({length:maxSplits}, (_,i)=>`T${i+1}`);
 
-  // construit les lignes augmentées
-  const out = rows.map(r => {
+  return rows.map(r => {
     const obj = {...r};
     let hadSplits = false;
     for (const k of splitKeys) {
       const arr = parseSplits(r[k]);
-      hadSplits = hadSplits || arr.length>0;
+      if (arr.length) hadSplits = true;
       tCols.forEach((tName, idx) => {
-        obj[tName] = arr[idx] ?? obj[tName] ?? ""; // si plusieurs champs split, on remplit sans écraser une valeur déjà posée
+        if (obj[tName] == null) obj[tName] = arr[idx] ?? "";
       });
     }
-    // si on a créé au moins un T*, on supprime la/les colonnes split originales pour plus de lisibilité
-    if (hadSplits) {
-      for (const k of splitKeys) delete obj[k];
-    }
+    if (hadSplits) { for (const k of splitKeys) delete obj[k]; }
     return obj;
   });
-
-  return out;
 }
 
-// Rendu de cellules (pills pour listes résiduelles, objets/arrays aplatis)
+// ------------ Helpers tri: time/number ------------
+function looksLikeTime(v) {
+  const s = String(v || "");
+  // hh:mm:ss(.ms) | mm:ss(.ms) | ss(.ms)
+  return /^(\d{1,2}:)?\d{1,2}:\d{1,2}(\.\d+)?$/.test(s) || /^\d{1,2}(\.\d+)?$/.test(s);
+}
+function parseTimeToSeconds(v) {
+  if (v == null) return Number.POSITIVE_INFINITY;
+  const s = String(v).trim();
+  if (s.includes(":")) {
+    const parts = s.split(":").map(x=>x.trim());
+    let h=0, m=0, sec=0;
+    if (parts.length === 3) { h = +parts[0]||0; m = +parts[1]||0; sec = parseFloat(parts[2])||0; }
+    else if (parts.length === 2) { m = +parts[0]||0; sec = parseFloat(parts[1])||0; }
+    else { sec = parseFloat(parts[0])||0; }
+    return h*3600 + m*60 + sec;
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? Number.POSITIVE_INFINITY : n;
+}
+
+function typedSortValue(key, val) {
+  const t = (_types && _types[key]) || null;
+  if (t === "time" || (!t && (key.toLowerCase()==="temps_total" || /^t\d+$/i.test(key) || looksLikeTime(val)))) {
+    return parseTimeToSeconds(val);
+  }
+  if (t === "number") {
+    const n = parseFloat(val);
+    return isNaN(n) ? Number.POSITIVE_INFINITY : n;
+  }
+  // fallback: texte
+  return String(val ?? "").toLocaleLowerCase();
+}
+
+// ------------ Rendu cellules ------------
 function formatCellValue(key, val) {
   if (val == null) return "";
   const k = (key || "").toLowerCase();
@@ -82,30 +123,26 @@ function formatCellValue(key, val) {
       `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;border-radius:999px;background:#eef;border:1px solid #d5d9ff;">${s}</span>`
     ).join("<br>");
   }
-
   if (Array.isArray(val)) return val.map(v => formatCellValue(k, v)).join("<br>");
   if (typeof val === "object") {
     return Object.entries(val).map(([kk, vv]) => `<div><strong>${kk}:</strong> ${formatCellValue(kk, vv)}</div>`).join("");
   }
-
   return String(val);
 }
 
 // ------------ Initialisation ------------
 function afficherParticipants() {
   _elevesBrut = JSON.parse(localStorage.getItem("eleves") || "[]");
+  const meta = collectMeta(_elevesBrut);
+  _labels = meta.labels;
+  _types  = meta.types;
 
-  // construit la vue augmentée (T1..Tn)
   _vueCourante = augmentData(_elevesBrut);
 
   const triSelect = document.getElementById("tri-select");
-  // Menu de tri basé sur l’union des clés de la vue augmentée
   let keys = allColumnKeys(_vueCourante);
-  // si T1 existe, on masque toute clé split résiduelle
-  if (keys.some(k => /^T\d+$/.test(k))) {
-    keys = keys.filter(k => !isSplitKey(k));
-  }
-  triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+  if (keys.some(k => /^T\d+$/i.test(k))) keys = keys.filter(k => !isSplitKey(k));
+  triSelect.innerHTML = keys.map(k => `<option value="${k}">${humanLabel(k)}</option>`).join("");
 
   updateTable(_vueCourante);
 }
@@ -122,13 +159,9 @@ function updateTable(data) {
     return;
   }
 
-  // colonnes depuis la vue augmentée
   let cols = allColumnKeys(data);
-  if (cols.some(k => /^T\d+$/.test(k))) {
-    cols = cols.filter(k => !isSplitKey(k)); // masque ‘intermediaires’ si T* présent
-  }
-
-  thead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr>`;
+  if (cols.some(k => /^T\d+$/i.test(k))) cols = cols.filter(k => !isSplitKey(k));
+  thead.innerHTML = `<tr>${cols.map(c => `<th>${humanLabel(c)}</th>`).join("")}</tr>`;
 
   tbody.innerHTML = data.map((row, i) => {
     const tds = cols.map(k => formatCellValue(k, row[k])).join("</td><td>");
@@ -154,11 +187,13 @@ function filtrerTexte() {
     });
   }
 
-  // met à jour la vue augmentée + menu de tri
+  const meta = collectMeta(filtered);
+  _labels = meta.labels; _types = meta.types;
+
   _vueCourante = augmentData(filtered);
   let keys = allColumnKeys(_vueCourante);
-  if (keys.some(k => /^T\d+$/.test(k))) keys = keys.filter(k => !isSplitKey(k));
-  document.getElementById("tri-select").innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+  if (keys.some(k => /^T\d+$/i.test(k))) keys = keys.filter(k => !isSplitKey(k));
+  document.getElementById("tri-select").innerHTML = keys.map(k => `<option value="${k}">${humanLabel(k)}</option>`).join("");
 
   updateTable(_vueCourante);
 }
@@ -170,11 +205,10 @@ function trierParticipants() {
   if (data.length === 0) return;
 
   data.sort((a, b) => {
-    const A = a[critere], B = b[critere];
-    if (!isNaN(parseFloat(A)) && !isNaN(parseFloat(B))) {
-      return parseFloat(A) - parseFloat(B); // tri numérique
-    }
-    return String(A || "").localeCompare(String(B || ""), "fr", { sensitivity: "base" });
+    const va = typedSortValue(critere, a[critere]);
+    const vb = typedSortValue(critere, b[critere]);
+    if (typeof va === "number" && typeof vb === "number") return va - vb;
+    return String(va).localeCompare(String(vb), "fr", { sensitivity: "base" });
   });
 
   _vueCourante = data;
@@ -187,9 +221,7 @@ function exporterCSV() {
   if (!data.length) return;
 
   let header = allColumnKeys(data);
-  if (header.some(k => /^T\d+$/.test(k))) {
-    header = header.filter(k => !isSplitKey(k)); // masque ‘intermediaires’ si T* présent
-  }
+  if (header.some(k => /^T\d+$/i.test(k))) header = header.filter(k => !isSplitKey(k)); // masque ‘intermediaires’ si T* présent
 
   const rows = data.map(row => header.map(k => (row[k] ?? "")).join(","));
   const csv = [header.join(","), ...rows].join("\n");
@@ -197,11 +229,8 @@ function exporterCSV() {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "participants.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = "participants.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
@@ -226,11 +255,14 @@ function importerCSV(event) {
 
     localStorage.setItem("eleves", JSON.stringify(data));
     _elevesBrut = data.slice();
-    _vueCourante = augmentData(_elevesBrut);
 
+    const meta = collectMeta(_elevesBrut);
+    _labels = meta.labels; _types = meta.types;
+
+    _vueCourante = augmentData(_elevesBrut);
     let keys = allColumnKeys(_vueCourante);
-    if (keys.some(k => /^T\d+$/.test(k))) keys = keys.filter(k => !isSplitKey(k));
-    document.getElementById("tri-select").innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+    if (keys.some(k => /^T\d+$/i.test(k))) keys = keys.filter(k => !isSplitKey(k));
+    document.getElementById("tri-select").innerHTML = keys.map(k => `<option value="${k}">${humanLabel(k)}</option>`).join("");
 
     updateTable(_vueCourante);
   };
@@ -242,49 +274,42 @@ function imprimerTableau() {
   const table = document.getElementById("participants-table");
   if (!table) return;
 
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  document.body.appendChild(iframe);
+  // Ouvre un onglet d’aperçu avec un bouton “Imprimer” (évite le blocage iOS d’impression auto)
+  const win = window.open("", "_blank");
+  if (!win) { alert("Veuillez autoriser l’ouverture de fenêtres pour imprimer."); return; }
 
-  const doc = iframe.contentWindow || iframe.contentDocument;
-  const wdoc = doc.document || doc;
-  wdoc.open();
-  wdoc.write(`
+  win.document.write(`
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Participants</title>
+        <title>Participants enregistrés</title>
         <style>
           @page { size: A4; margin: 12mm; }
           body { font-family: Arial, sans-serif; margin: 0; font-size: 12pt; }
-          h1 { font-size: 16pt; margin: 0 0 8mm 0; }
-          table { border-collapse: collapse; width: 100%; }
+          h1 { font-size: 18pt; margin: 12mm 12mm 6mm 12mm; }
+          .bar { margin: 0 12mm 6mm 12mm; }
+          .btn { font-size: 12pt; padding: 8px 14px; border: 1px solid #aaa; border-radius: 8px; background: #f2f2f2; cursor: pointer; }
+          table { border-collapse: collapse; width: calc(100% - 24mm); margin: 0 12mm; }
           th, td { border: 1px solid #ccc; padding: 6pt; text-align: left; vertical-align: top; }
           th { background: #f2f2f2; }
           tr:nth-child(even) { background: #fafafa; }
           td { white-space: normal; word-break: break-word; }
-          .footer { margin-top: 8mm; font-size: 9pt; color: #666; text-align: center; }
+          .footer { margin: 8mm 12mm; font-size: 9pt; color: #666; text-align: center; }
         </style>
       </head>
       <body>
         <h1>Participants enregistrés</h1>
+        <div class="bar">
+          <button class="btn" onclick="window.print()">🖨️ Imprimer / PDF</button>
+        </div>
         ${table.outerHTML}
         <div class="footer">ScanProf — Impression du ${new Date().toLocaleString()}</div>
       </body>
     </html>
   `);
-  wdoc.close();
-
-  setTimeout(() => {
-    (iframe.contentWindow || iframe).focus();
-    (iframe.contentWindow || iframe).print();
-    setTimeout(() => document.body.removeChild(iframe), 800);
-  }, 120);
+  win.document.close();
+  // On ESSAIE d’imprimer (sera ignoré si iOS bloque), sinon l’utilisateur clique sur le bouton
+  try { win.focus(); win.print(); } catch(e) {}
 }
 
 // ------------ Envoi par mail ------------
@@ -293,7 +318,7 @@ function envoyerParMail() {
   if (!data.length) return;
 
   let header = allColumnKeys(data);
-  if (header.some(k => /^T\d+$/.test(k))) header = header.filter(k => !isSplitKey(k));
+  if (header.some(k => /^T\d+$/i.test(k))) header = header.filter(k => !isSplitKey(k));
 
   const lignes = data.map(e => header.map(k => (e[k] ?? "")).join("\t")).join("%0A");
   const entete = header.join("\t");
