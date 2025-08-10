@@ -1,178 +1,249 @@
-// zenos.js — normalisation des classes + tableau unique + exports
-// Seul l'envoi par mail a été amélioré (objet/texte pro, pas de %0A)
-
+// zenos.js — Groupes ZENOS : 1H + 2M + 1B, mixité stricte si possible, sinon suggestions
 document.addEventListener("DOMContentLoaded", function () {
-  var all = safeParse(localStorage.getItem("eleves")) || [];
+  const all = safeParse(localStorage.getItem("eleves")) || [];
 
-  // Normalise les classes en amont
-  for (var i = 0; i < all.length; i++) {
-    if (all[i]) all[i].classe = canonClasse(all[i].classe || all[i].Classe || "");
+  // Normalise les classes une fois
+  for (const e of all) {
+    if (e) e.classe = canonClasse(e.classe || e.Classe || "");
   }
 
-  // Construit la liste des classes uniques (après normalisation)
-  var classes = uniqueClasses(all);
-  var select = document.getElementById("classe-select");
+  // Remplit le select des classes
+  const select = document.getElementById("classe-select");
   if (select) {
-    // Ajoute l’option “Tous (classe ignorée)”
-    var optTous = document.createElement("option");
+    const optTous = document.createElement("option");
     optTous.value = "__TOUS__";
     optTous.textContent = "Tous (classe ignorée)";
     select.appendChild(optTous);
 
-    // Puis chaque classe normalisée
-    classes.sort();
-    for (var j = 0; j < classes.length; j++) {
-      var op = document.createElement("option");
-      op.value = classes[j];
-      op.textContent = classes[j];
+    const classes = uniqueClasses(all).sort();
+    for (const c of classes) {
+      const op = document.createElement("option");
+      op.value = c; op.textContent = c;
       select.appendChild(op);
     }
   }
 
-  // Branche bouton
-  var btn = document.getElementById("btn-generer-zenos");
+  // Bouton générer
+  const btn = document.getElementById("btn-generer-zenos");
   if (btn) btn.addEventListener("click", genererGroupesZenos);
 
-  // Si 1 seule classe, la sélectionner par défaut
-  var titre = document.getElementById("titre-classe");
-  if (select && classes.length === 1) {
-    select.value = classes[0];
-    if (titre) titre.textContent = "Classe " + classes[0];
+  // Si 1 seule classe, on pré-sélectionne + on génère
+  const titre = document.getElementById("titre-classe");
+  if (select && uniqueClasses(all).length === 1) {
+    select.value = uniqueClasses(all)[0];
+    if (titre) titre.textContent = "Classe " + select.value;
     genererGroupesZenos();
   } else if (titre) {
     titre.textContent = "Tous (classe ignorée)";
   }
 });
 
-function safeParse(text) {
-  try { return JSON.parse(text || "[]"); } catch (e) { return []; }
+// ===== Helpers =====
+function safeParse(t){ try{ return JSON.parse(t||"[]"); } catch(e){ return []; } }
+
+// "5ème A", "5emeA", "5 a", "5a" → "5A"
+function canonClasse(raw){
+  if(!raw) return "";
+  let s = String(raw).toUpperCase();
+  s = s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");  // accents
+  s = s.replace(/EME|ÈME/g,"");                           // EME
+  s = s.replace(/[^A-Z0-9]/g,"");                         // suppr espaces/points
+  // On garde “niveau+lettre” si possible (ex: 5A, 4B…), sinon s brut
+  const m = s.match(/^(\d{1,2})([A-Z])$/);
+  return m ? (m[1]+m[2]) : s;
 }
 
-// Normalisation robuste : "5ème A", "5emeA", "5 A", "5a" → "5A"
-function canonClasse(raw) {
-  if (!raw) return "";
-  var s = String(raw).toUpperCase();
-  // enlève accents
-  s = s.replace(/[ÉÈÊ]/g, "E").replace(/[ÀÂÄ]/g, "A").replace(/[ÙÛÜ]/g, "U").replace(/[ÎÏ]/g, "I").replace(/[ÔÖ]/g, "O").replace(/[Ç]/g, "C");
-  // enlève espaces/points/tirets/underscores
-  s = s.replace(/[\s._-]+/g, "");
-  // remplace "EME"/"EM" par "E"
-  s = s.replace(/EME/g, "E").replace(/EM/g, "E");
-  // cas communs : 5E A → 5A
-  s = s.replace(/^(\d+)E([A-Z])$/, "$1$2");
-  // pattern "5A"
-  var m = s.match(/^(\d+)([A-Z])$/);
-  if (m) return m[1] + m[2];
-  // "5EME A" → 5A
-  m = s.match(/^(\d+)E?ME?([A-Z])$/);
-  if (m) return m[1] + m[2];
-  // Dernier recours : chiffre + lettre
-  m = s.match(/^(\d+).*?([A-Z])$/);
-  if (m) return m[1] + m[2];
-  return s;
+function uniqueClasses(arr){
+  const set = new Set();
+  for(const e of arr){ if(e && e.classe) set.add(e.classe); }
+  return Array.from(set);
 }
 
-function uniqueClasses(all) {
-  var set = {};
-  for (var i = 0; i < all.length; i++) {
-    if (all[i] && all[i].classe) set[all[i].classe] = true;
-  }
-  var out = [];
-  for (var k in set) out.push(k);
-  return out;
+function esc(s){ return String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function appendCell(tr, val){ const td=document.createElement("td"); td.textContent=val==null?"":String(val); tr.appendChild(td); }
+
+function normSexe(s){
+  const x = String(s||"").trim().toUpperCase();
+  if (x.startsWith("F")) return "F";
+  if (x.startsWith("G") || x.startsWith("M")) return "G"; // selon saisies
+  return "X"; // inconnu
 }
 
-function genererGroupesZenos() {
-  var all = safeParse(localStorage.getItem("eleves")) || [];
-  // normalise encore (au cas où nouveaux scans)
-  for (var i = 0; i < all.length; i++) {
-    if (all[i]) all[i].classe = canonClasse(all[i].classe || all[i].Classe || "");
-  }
+// Quartiles sur VMA (ascendant)
+function quartileBuckets(listAsc){
+  const n = listAsc.length;
+  const q1 = Math.floor(n*0.25), q2 = Math.floor(n*0.5), q3 = Math.floor(n*0.75);
+  const B = listAsc.slice(0, q1);
+  const Mminus = listAsc.slice(q1, q2);
+  const Mplus  = listAsc.slice(q2, q3);
+  const H = listAsc.slice(q3);
+  return {H, Mplus, Mminus, B};
+}
 
-  var select = document.getElementById("classe-select");
-  var choix = select && select.value ? select.value : "__TOUS__";
+// Prend un élément d’un “rôle” (bucket). sens = "high" (pop) ou "low" (shift)
+function take(bucket, sens="low"){
+  if (!bucket.length) return null;
+  return sens==="high" ? bucket.pop() : bucket.shift();
+}
 
-  var candidats = [];
-  for (var j = 0; j < all.length; j++) {
-    var e = all[j] || {};
-    if (e.vma === undefined || e.vma === "") continue;
-    var v = Number(e.vma);
-    if (isNaN(v)) continue;
-    if (choix !== "__TOUS__" && (e.classe || "") !== choix) continue;
+// ===== Coeur : génération des groupes =====
+function genererGroupesZenos(){
+  const all = safeParse(localStorage.getItem("eleves")) || [];
+  // normalise encore au cas où
+  for(const e of all){ if(e) e.classe = canonClasse(e.classe || e.Classe || ""); }
 
-    candidats.push({
+  const select = document.getElementById("classe-select");
+  const choix = select && select.value ? select.value : "__TOUS__";
+
+  // Filtre candidats
+  let cand = [];
+  for(const e of all){
+    const v = Number(e && e.vma);
+    if (!isFinite(v)) continue;
+    if (choix !== "__TOUS__" && canonClasse(e.classe) !== choix) continue;
+    cand.push({
       nom: e.nom || e.Nom || "",
-      prenom: e.prenom || e.Prénom || "",
+      prenom: e.prenom || e.Prénom || e.Prenom || "",
       classe: e.classe || "",
-      sexe: e.sexe || e.Sexe || "",
+      sexe: normSexe(e.sexe || e.Sexe || ""),
       distance: e.distance || e.Distance || "",
       vma: v
     });
   }
 
-  var titre = document.getElementById("titre-classe");
-  if (titre) titre.textContent = (choix === "__TOUS__") ? "Tous (classe ignorée)" : ("Classe " + choix);
+  const titre = document.getElementById("titre-classe");
+  if (titre) titre.textContent = (choix==="__TOUS__") ? "Tous (classe ignorée)" : ("Classe " + choix);
 
-  if (candidats.length < 4) {
-    alert("Pas assez d'élèves valides (VMA) pour former des groupes.");
-    return;
+  if (cand.length < 4){ alert("Pas assez d'élèves valides (VMA) pour former des groupes."); return; }
+
+  // Tri ascendant pour calculer les quartiles
+  cand.sort((a,b)=> a.vma - b.vma);
+  const {H, Mplus, Mminus, B} = quartileBuckets(cand);   // asc → B..H
+
+  // Nombre de groupes complets
+  const G = Math.floor(cand.length / 4);
+  const groupes = [];
+  // Copie des buckets (on va dépiler)
+  const h = H.slice(), mp = Mplus.slice(), mm = Mminus.slice(), b = B.slice();
+
+  // Construction “idéal” : [H, Mplus, Mminus, B]
+  for (let g=0; g<G; g++){
+    let gH = take(h, "high") || take(mp,"high") || take(mm,"high") || take(b,"high");
+    let gM1 = take(mp,"high") || take(mm,"high") || take(h,"high") || take(b,"high");
+    let gM2 = take(mm,"low")  || take(mp,"low")  || take(h,"low")  || take(b,"low");
+    let gB = take(b,"low")    || take(mm,"low")  || take(mp,"low") || take(h,"low");
+
+    const pack = [gH, gM1, gM2, gB].filter(Boolean);
+    // Tag “rôle” pour équilibrage ultérieur (utile pour swaps propres)
+    if (pack[0]) pack[0].role = "H";
+    if (pack[1]) pack[1].role = "M+";
+    if (pack[2]) pack[2].role = "M-";
+    if (pack[3]) pack[3].role = "B";
+
+    if (pack.length===4) groupes.push(pack);
+    else break;
   }
 
-  // Tri VMA décroissante
-  candidats.sort(function(a,b){ return b.vma - a.vma; });
+  // Restants (jamais de groupes incomplets)
+  const restants = [...h, ...mp, ...mm, ...b];
 
-  // Groupes de 4 : [haut][milieu][milieu][bas]
-  var groupes = [];
-  var reste = candidats.slice();
-  while (reste.length >= 4) {
-    var haut = reste.shift();
-    var bas  = reste.pop();
-    var m1   = reste.shift();
-    var m2   = reste.length ? reste.shift() : null;
-    var pack = [haut, m1, m2, bas].filter(Boolean);
-    if (pack.length === 4) groupes.push(pack);
-    else { for (var r = 0; r < pack.length; r++) reste.unshift(pack[r]); break; }
-  }
-  var nonAttribues = reste;
+  // Équilibrage mixité (au moins 1F + 1G si c’est mathématiquement possible)
+  const suggestions = balanceMixite(groupes);
 
-  renderTableauGroupes(groupes, nonAttribues);
+  renderTableauGroupes(groupes, restants, suggestions);
 }
 
-function renderTableauGroupes(groupes, nonAttribues) {
-  var groupesDiv = document.getElementById("groupes");
-  var restantsDiv = document.getElementById("restants");
+// Essaie d’assurer au moins 1F + 1G par groupe via des swaps “même rôle”
+function balanceMixite(groupes){
+  const sug = []; // suggestions textuelles si on n’y arrive pas
+
+  function countFG(g){
+    let F=0,G=0;
+    for (const e of g){ if (e.sexe==="F") F++; else if (e.sexe==="G") G++; }
+    return {F,G};
+  }
+
+  // Indexe candidats par rôle et sexe
+  function indexByRole(groups){
+    const idx = {H:{F:[],G:[]}, "M+":{F:[],G:[]}, "M-":{F:[],G:[]}, B:{F:[],G:[]}};
+    groups.forEach((g,gi)=>{
+      g.forEach((e,ei)=>{
+        const r = e.role || "M+";
+        if (e.sexe==="F"||e.sexe==="G") idx[r][e.sexe].push({gi, ei});
+      });
+    });
+    return idx;
+  }
+
+  // premier passage : corriger les groupes “sans F” ou “sans G”
+  let changed = true; let passes = 0;
+  while (changed && passes<4){
+    changed = false; passes++;
+    const idx = indexByRole(groupes);
+
+    for (let gi=0; gi<groupes.length; gi++){
+      const g = groupes[gi], c = countFG(g);
+      if (c.F===0 || c.G===0){
+        // cherche un swap rôle à rôle
+        let done = false;
+        for (const eIdx in g){
+          const e = g[eIdx];
+          const need = (c.F===0) ? "F" : "G";
+          const have = (c.F===0) ? "G" : "F";
+          if (e.sexe !== have) continue; // on ne remplace que le sexe “en trop”
+          const role = e.role || "M+";
+          const pool = idx[role][need]; // donneur dans même rôle
+          const donor = pool.find(p => p.gi!==gi);
+          if (donor){
+            const d = groupes[donor.gi][donor.ei];
+            // swap
+            groupes[gi][eIdx] = d;
+            groupes[donor.gi][donor.ei] = e;
+            changed = true; done = true;
+            break;
+          }
+        }
+        if (!changed){
+          // échec : on proposera une suggestion
+          const want = (c.F===0) ? "F" : "G";
+          sug.push(`Groupe ${gi+1} : ajouter 1 ${want} (échange avec un autre groupe dans le même quartile si possible).`);
+        }
+      }
+    }
+  }
+
+  // Optionnel : tendre vers 2/2 (on laisse simple, l’exigence est “mixte”)
+  return sug;
+}
+
+// ===== Rendu =====
+function renderTableauGroupes(groupes, nonAttribues, suggestions){
+  const groupesDiv = document.getElementById("groupes");
+  const restantsDiv = document.getElementById("restants");
   if (groupesDiv) groupesDiv.innerHTML = "";
   if (restantsDiv) restantsDiv.innerHTML = "";
   if (!groupesDiv) return;
 
-  var table = document.createElement("table");
+  const table = document.createElement("table");
   table.className = "zenos-unique";
   table.innerHTML =
     '<thead>' +
-      '<tr>' +
-        '<th style="width:110px;">Groupe</th>' +
-        '<th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th>' +
-      '</tr>' +
-    '</thead>' +
-    '<tbody id="tbody-zenos"></tbody>';
-
+      '<tr><th>Groupe</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th></tr>' +
+    '</thead><tbody></tbody>';
   groupesDiv.appendChild(table);
-  var tbody = table.querySelector("#tbody-zenos");
 
-  for (var g = 0; g < groupes.length; g++) {
-    var groupe = groupes[g];
-    var colorClass = (g % 2 === 0) ? "group-blue" : "group-white";
-
-    for (var i = 0; i < groupe.length; i++) {
-      var e = groupe[i];
-      var tr = document.createElement("tr");
-      tr.className = colorClass;
-
-      if (i === 0) {
-        var tdG = document.createElement("td");
-        tdG.setAttribute("rowspan", "4");
+  const tbody = table.querySelector("tbody");
+  for (let g=0; g<groupes.length; g++){
+    const pack = groupes[g];
+    for (let i=0; i<pack.length; i++){
+      const e = pack[i];
+      const tr = document.createElement("tr");
+      if (i===0){
+        const tdG = document.createElement("td");
+        tdG.setAttribute("rowspan","4");
         tdG.style.fontWeight = "700";
-        tdG.textContent = "Groupe " + (g + 1);
+        tdG.textContent = "Groupe " + (g+1);
         tr.appendChild(tdG);
       }
       appendCell(tr, e.nom);
@@ -183,91 +254,111 @@ function renderTableauGroupes(groupes, nonAttribues) {
       appendCell(tr, e.distance);
       tbody.appendChild(tr);
     }
-
     // ligne séparatrice
-    var sep = document.createElement("tr");
+    const sep = document.createElement("tr");
     sep.className = "separator-row";
-    var sepTd = document.createElement("td");
-    sepTd.setAttribute("colspan", "7");
+    const sepTd = document.createElement("td");
+    sepTd.setAttribute("colspan","7");
     sep.appendChild(sepTd);
     tbody.appendChild(sep);
   }
 
   // Restants
-  if (nonAttribues && nonAttribues.length && restantsDiv) {
-    var h = document.createElement("div");
+  if (nonAttribues && nonAttribues.length && restantsDiv){
+    const h = document.createElement("div");
     h.className = "unassigned-title";
     h.textContent = "Élèves à attribuer manuellement car groupes complets :";
     restantsDiv.appendChild(h);
 
-    var tabR = document.createElement("table");
+    const tabR = document.createElement("table");
     tabR.className = "unassigned";
     tabR.innerHTML =
-      '<thead>' +
-        '<tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th></tr>' +
-      '</thead>' +
-      '<tbody>' + nonAttribues.map(function(e){
-        return '<tr>' +
-          '<td>' + esc(e.nom) + '</td>' +
-          '<td>' + esc(e.prenom) + '</td>' +
-          '<td>' + esc(e.classe) + '</td>' +
-          '<td>' + esc(e.sexe) + '</td>' +
-          '<td>' + esc(e.vma) + '</td>' +
-          '<td>' + esc(e.distance) + '</td>' +
-        '</tr>';
-      }).join("") + '</tbody>';
-
+      '<thead><tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th><th>Distance</th></tr></thead>' +
+      '<tbody>' +
+      nonAttribues.map(e => (
+        '<tr>' +
+          '<td>'+esc(e.nom)+'</td>' +
+          '<td>'+esc(e.prenom)+'</td>' +
+          '<td>'+esc(e.classe)+'</td>' +
+          '<td>'+esc(e.sexe)+'</td>' +
+          '<td>'+esc(e.vma)+'</td>' +
+          '<td>'+esc(e.distance)+'</td>' +
+        '</tr>'
+      )).join("") +
+      '</tbody>';
     restantsDiv.appendChild(tabR);
-
-    var note = document.createElement("div");
-    note.className = "note";
-    note.textContent = "Ces élèves n’ont pas pu être intégrés dans un groupe complet de 4.";
-    restantsDiv.appendChild(note);
   }
-}
 
-// ====== OUTILS / EXPORTS ======
-function appendCell(tr, val) {
-  var td = document.createElement("td");
-  td.textContent = (val === undefined || val === null) ? "" : String(val);
-  tr.appendChild(td);
-}
-function esc(s) {
-  s = String(s === undefined || s === null ? "" : s);
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-}
+  // Suggestions mixité (si besoin)
+  if (suggestions && suggestions.length && restantsDiv){
+    const box = document.createElement("div");
+    box.style.marginTop = "8px";
+    box.style.color = "#b35b00";
+    box.style.fontWeight = "600";
+    box.textContent = "Mixité partielle : suggestions d’échanges";
+    restantsDiv.appendChild(box);
 
-function exporterGroupesCSV() {
-  var table = document.querySelector("table.zenos-unique");
-  if (!table) return;
-  var rows = table.querySelectorAll("tr");
-  var csv = [];
-  for (var i=0; i<rows.length; i++) {
-    if (rows[i].className === "separator-row") continue;
-    var cells = rows[i].querySelectorAll("th,td");
-    if (!cells.length) continue;
-    var line = [];
-    for (var c=0; c<cells.length; c++) {
-      var txt = (cells[c].textContent || "").trim();
-      if (txt.indexOf(",") !== -1) txt = '"' + txt.replace(/"/g, '""') + '"';
-      line.push(txt);
+    const ul = document.createElement("ul");
+    ul.style.marginTop = "4px";
+    for (const s of suggestions){
+      const li = document.createElement("li");
+      li.textContent = s;
+      ul.appendChild(li);
     }
-    csv.push(line.join(","));
+    restantsDiv.appendChild(ul);
   }
-  var blob = new Blob(["\uFEFF" + csv.join("\n")], { type: "text/csv;charset=utf-8;" });
-  var a = document.createElement("a");
+}
+
+// ===== Exports (inchangés côté UI) =====
+function exporterGroupesCSV(){
+  const table = document.querySelector("table.zenos-unique");
+  if (!table) return;
+  const rows = table.querySelectorAll("tbody tr");
+  const csv = [];
+  csv.push(["Groupe","Nom","Prénom","Classe","Sexe","VMA","Distance"].join(","));
+  let currentGroup = 0;
+  let countInGroup = 0;
+  for (const tr of rows){
+    const tds = tr.querySelectorAll("td");
+    if (!tds.length) continue;
+    if (tds.length === 7) { // avec cellule "Groupe"
+      currentGroup++; countInGroup = 0;
+      const nom = tds[1].textContent.trim();
+      const pre = tds[2].textContent.trim();
+      const cla = tds[3].textContent.trim();
+      const sex = tds[4].textContent.trim();
+      const vma = tds[5].textContent.trim();
+      const dis = tds[6].textContent.trim();
+      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(qq=> {
+        let t=qq; if (/,/.test(t)) t='"'+t.replace(/"/g,'""')+'"'; return t;
+      }).join(","));
+    } else {
+      countInGroup++;
+      const nom = tds[0].textContent.trim();
+      const pre = tds[1].textContent.trim();
+      const cla = tds[2].textContent.trim();
+      const sex = tds[3].textContent.trim();
+      const vma = tds[4].textContent.trim();
+      const dis = tds[5].textContent.trim();
+      csv.push([`Groupe ${currentGroup}`,nom,pre,cla,sex,vma,dis].map(qq=>{
+        let t=qq; if (/,/.test(t)) t='"'+t.replace(/"/g,'""')+'"'; return t;
+      }).join(","));
+    }
+  }
+  const blob = new Blob(["\uFEFF"+csv.join("\n")], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "groupes_zenos.csv";
   a.click();
 }
 
-function imprimerGroupes() {
-  var zone = document.getElementById("groupes-panel");
+function imprimerGroupes(){
+  const zone = document.getElementById("groupes-panel");
   if (!zone) return;
-  var win = window.open("", "_blank");
+  const win = window.open("", "_blank");
   win.document.write(
     '<html><head><meta charset="UTF-8"><title>Impression - Groupes ZENOS</title>' +
-    '<style>table{width:100%;border-collapse:collapse;margin-bottom:18px;}th,td{border:1px solid #000;padding:6px;text-align:center;}thead th{background:#eef5ff;}tr.group-blue td{background:#e6f2ff;}tr.group-white td{background:#fff;}tr.separator-row td{height:8px;border:none;background:transparent;}.unassigned thead th{background:#ffe9cc}.unassigned tbody td{background:#fff4e6}</style>' +
+    '<style>table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #ccc;padding:6px;text-align:left}th{background:#f2f2f2}tr.separator-row td{border:none;height:10px} .unassigned-title{margin:12px 0 6px;font-weight:700;color:#cc5200} .unassigned thead th{background:#ffe9cc}.unassigned tbody td{background:#fff4e6}</style>' +
     '</head><body>' +
     '<h1 style="text-align:center;">ZENOS TOUR</h1>' +
     zone.innerHTML +
@@ -275,94 +366,44 @@ function imprimerGroupes() {
     '</body></html>'
   );
   win.document.close();
-  win.print();
+  try { win.focus(); win.print(); } catch(e){}
 }
 
-function exporterGroupesPDF() { imprimerGroupes(); }
+function exporterGroupesPDF(){ imprimerGroupes(); }
 
-// --- Mail PRO sans %0A parasites : sujet + intro + groupes lisibles + signature
-function envoyerGroupesParMail() {
-  var table = document.querySelector("table.zenos-unique");
+// Mail : sujet + groupes propres (sans %0A en double)
+function envoyerGroupesParMail(){
+  const table = document.querySelector("table.zenos-unique");
   if (!table) return;
+  const classeTitre = (document.getElementById("titre-classe")?.textContent || "").trim();
+  const subject = "Groupes ZENOS TOUR" + (classeTitre ? " – " + classeTitre : "");
 
-  var classeTitre = (document.getElementById("titre-classe") && document.getElementById("titre-classe").textContent || "").trim();
-  var subject = "Groupes ZENOS TOUR" + (classeTitre ? " – " + classeTitre : "");
-
-  var rows = table.querySelectorAll("tbody tr");
-  var lignes = [];
-
-  // En-tête propre
+  const rows = table.querySelectorAll("tbody tr");
+  const lignes = [];
   lignes.push("Bonjour,");
   lignes.push("");
-  lignes.push("Voici les groupes générés par ScanProf pour lancer le défi ZENOS Tour. Bonne course !");
+  if (classeTitre) lignes.push(classeTitre);
+  lignes.push("Groupes ZENOS :");
   lignes.push("");
 
-  // Parcours du tableau unique : un bloc par groupe, 4 lignes "Nom Prénom"
-  var courant = "";     // "Groupe X"
-  var buffer = [];      // ["Nom Prénom", ...]
-  for (var i = 0; i < rows.length; i++) {
-    var tr = rows[i];
-
-    // séparateur de groupe
-    if (tr.className === "separator-row") {
-      if (courant && buffer.length) {
-        lignes.push(courant);
-        for (var k = 0; k < buffer.length; k++) lignes.push(buffer[k]);
-        lignes.push(""); // ligne vide entre groupes
-      }
-      courant = ""; buffer = [];
-      continue;
-    }
-
-    var tds = tr.querySelectorAll("td");
-    if (tds.length === 7) {
-      // première ligne d'un groupe (colonne "Groupe" présente)
-      if (courant && buffer.length) {
-        lignes.push(courant);
-        for (var k2 = 0; k2 < buffer.length; k2++) lignes.push(buffer[k2]);
-        lignes.push("");
-        buffer = [];
-      }
-      courant = (tds[0].textContent || "Groupe").trim(); // ex. "Groupe 1"
-      var nom = (tds[1].textContent || "").trim();
-      var prenom = (tds[2].textContent || "").trim();
-      buffer.push(nom + " " + prenom);
-    } else if (tds.length === 6) {
-      // lignes suivantes (sans la colonne Groupe)
-      var n = (tds[0].textContent || "").trim();
-      var p = (tds[1].textContent || "").trim();
-      buffer.push(n + " " + p);
-    }
-  }
-  // flush final
-  if (courant && buffer.length) {
-    lignes.push(courant);
-    for (var k3 = 0; k3 < buffer.length; k3++) lignes.push(buffer[k3]);
-    lignes.push("");
+  let currentGroup = 0;
+  for (const tr of rows){
+    const tds = tr.querySelectorAll("td");
+    if (!tds.length) continue;
+    if (tds.length === 7){ currentGroup++; lignes.push("Groupe " + currentGroup + " :"); }
+    const start = (tds.length === 7) ? 1 : 0;
+    const nom = tds[start+0].textContent.trim();
+    const pre = tds[start+1].textContent.trim();
+    if (nom || pre) lignes.push(" - " + nom + " " + pre);
+    if (tds.length === 7) lignes.push(""); // ligne blanche après 4 élèves
   }
 
-  // Élèves non attribués (seulement Nom Prénom)
-  var nonAttribTbody = document.querySelector("#restants table.unassigned tbody");
-  if (nonAttribTbody) {
-    var restantsRows = nonAttribTbody.querySelectorAll("tr");
-    if (restantsRows.length) {
-      lignes.push("Élèves à attribuer manuellement :");
-      for (var r = 0; r < restantsRows.length; r++) {
-        var t = restantsRows[r].querySelectorAll("td");
-        var rn = (t[0] && t[0].textContent || "").trim();
-        var rp = (t[1] && t[1].textContent || "").trim();
-        lignes.push(rn + " " + rp);
-      }
-      lignes.push("");
-    }
-  }
-
-  // Signature pro
+  lignes.push("");
   lignes.push("Cordialement,");
   lignes.push("L’équipe ScanProf");
 
-  var bodyText = lignes.join("\n"); // vrais retours à la ligne
-  var mailto = "mailto:?subject=" + encodeURIComponent(subject) +
-               "&body=" + encodeURIComponent(bodyText); // encodage unique
+  const bodyText = lignes.join("\n");
+  const mailto = "mailto:?subject=" + encodeURIComponent(subject) +
+                 "&body=" + encodeURIComponent(bodyText);
   window.location.href = mailto;
 }
