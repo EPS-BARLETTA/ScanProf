@@ -1,7 +1,7 @@
 // zenos.js — Groupes ZENOS : 1H + 2M + 1B, mixité stricte si possible.
-// Ajoute un bloc “Suggestions d’échanges” (swap même rôle) avec bouton “Appliquer”.
+// Suggestions d’échanges (swap même rôle) avec bouton “Appliquer”.
 
-// État courant pour pouvoir appliquer les swaps sans regénérer tout
+// État courant pour appliquer les swaps sans regénérer tout
 window._zenosGroupes = [];
 window._zenosRestants = [];
 window._zenosChoixClasse = "__TOUS__";
@@ -333,7 +333,7 @@ function renderTableauGroupes(groupes, nonAttribues, suggestions){
       btn.textContent = "Appliquer";
       btn.style.marginLeft = "8px";
       btn.style.padding = "2px 8px";
-      btn.style.border = "1px solid "#aaa";
+      btn.style.border = '1px solid #aaa';   // ✅ guillemets corrigés
       btn.style.borderRadius = "6px";
       btn.style.background = "#f2f2f2";
       btn.onclick = () => zenosApplySwap(i);
@@ -404,7 +404,8 @@ function envoyerGroupesParMail(){
   const table = document.querySelector("table.zenos-unique");
   if (!table) return;
 
-  const classeTitre = (document.getElementById("titre-classe")?.textContent || "").trim();
+  const titreElt = document.getElementById("titre-classe");
+  const classeTitre = titreElt ? titreElt.textContent.trim() : "";
   const subject = "Groupes ZENOS TOUR" + (classeTitre ? " – " + classeTitre : "");
 
   const rows = table.querySelectorAll("tbody tr");
