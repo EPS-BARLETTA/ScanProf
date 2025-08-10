@@ -2,45 +2,62 @@
 let _elevesBrut = [];
 let _vueCourante = [];
 
+// --- Helper: compute ordered column keys across all rows ---
+function allColumnKeys(rows) {
+  if (!rows || !rows.length) return [];
+  const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma"];
+  const set = new Set();
+  rows.forEach(r => Object.keys(r || {}).forEach(k => set.add(k)));
+  // standard d’abord si présents, puis autres clés en ordre alpha
+  const others = Array.from(set)
+    .filter(k => !standard.includes(k))
+    .sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
+  return [...standard.filter(k => set.has(k)), ...others];
+}
+
 // -------- Initialisation --------
 function afficherParticipants() {
   _elevesBrut = JSON.parse(localStorage.getItem("eleves") || "[]");
   _vueCourante = _elevesBrut.slice();
 
   const triSelect = document.getElementById("tri-select");
-  updateTable(_vueCourante);
 
-  // Alimente le menu de tri d'après les clés présentes
+  // Menu de tri basé sur l’union des clés
   if (_elevesBrut.length > 0) {
-    const keys = Object.keys(_elevesBrut[0]);
+    const keys = allColumnKeys(_elevesBrut);
     triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+  } else {
+    triSelect.innerHTML = "";
   }
+
+  updateTable(_vueCourante);
 }
 
-// -------- Affichage du tableau --------
+// -------- Rendu tableau avec colonnes dynamiques --------
 function updateTable(data) {
+  const thead = document.getElementById("table-head");
   const tbody = document.getElementById("participants-body");
-  if (!tbody) return;
+  if (!thead || !tbody) return;
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7">Aucun élève enregistré.</td></tr>`;
+    thead.innerHTML = "";
+    tbody.innerHTML = `<tr><td colspan="1">Aucun élève enregistré.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = data.map((e, i) => `
-    <tr class="${i % 2 === 0 ? 'pair' : 'impair'}">
-      <td>${e.nom ?? ""}</td>
-      <td>${e.prenom ?? ""}</td>
-      <td>${e.classe ?? ""}</td>
-      <td>${e.sexe ?? ""}</td>
-      <td>${e.distance ?? ""}</td>
-      <td>${e.vitesse ?? ""}</td>
-      <td>${e.vma ?? ""}</td>
-    </tr>
-  `).join("");
+  const cols = allColumnKeys(data);
+
+  // Header
+  thead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr>`;
+
+  // Body
+  tbody.innerHTML = data.map((row, i) => {
+    const tds = cols.map(k => row[k] ?? "").join("</td><td>");
+    return `<tr class="${i % 2 === 0 ? 'pair' : 'impair'}"><td>${tds}</td></tr>`;
+  }).join("");
 }
 
-// -------- Filtre texte (sur toutes les colonnes) --------
+// -------- Filtre texte --------
 function filtrerTexte() {
   const q = (document.getElementById("filtre-txt").value || "").toLowerCase().trim();
   _elevesBrut = JSON.parse(localStorage.getItem("eleves") || "[]");
@@ -85,21 +102,19 @@ function exporterCSV() {
   const data = _vueCourante.length ? _vueCourante : JSON.parse(localStorage.getItem("eleves") || "[]");
   if (!data.length) return;
 
-  // Utilise les colonnes standard si dispo, sinon toutes les clés du 1er objet
-  const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma"];
-  const keys = standard.filter(k => k in data[0]);
-  const header = (keys.length ? keys : Object.keys(data[0]));
-
+  const header = allColumnKeys(data);
   const rows = data.map(row => header.map(k => (row[k] ?? "")).join(","));
   const csv = [header.join(","), ...rows].join("\n");
 
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "participants.csv";
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // -------- Import CSV --------
@@ -124,6 +139,12 @@ function importerCSV(event) {
     localStorage.setItem("eleves", JSON.stringify(data));
     _elevesBrut = data.slice();
     _vueCourante = data.slice();
+
+    // Met à jour tri-select et tableau avec les nouvelles colonnes importées
+    const triSelect = document.getElementById("tri-select");
+    const keys = allColumnKeys(_elevesBrut);
+    triSelect.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+
     updateTable(_vueCourante);
   };
   reader.readAsText(file);
@@ -138,24 +159,24 @@ function imprimerTableau() {
   win.document.write(`
     <html>
       <head>
-        <meta charset="UTF-8">
         <title>Participants</title>
         <style>
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #000; padding: 6px; text-align: center; }
-          thead th { background: #eef5ff; }
-          tbody tr:nth-child(even) { background: #f2f2f2; }
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f2f2f2; }
+          tr:nth-child(even) { background: #f9f9f9; }
         </style>
       </head>
       <body>
-        <h2 style="text-align:center;">Liste des participants</h2>
         ${table.outerHTML}
-        <div style="margin-top:16px; text-align:center;">ScanProf - Équipe EPS Lycée Vauban - LUXEMBOURG - JB</div>
       </body>
     </html>
   `);
   win.document.close();
+  win.focus();
   win.print();
+  win.close();
 }
 
 // -------- Envoi par mail --------
@@ -163,11 +184,11 @@ function envoyerParMail() {
   const data = _vueCourante.length ? _vueCourante : JSON.parse(localStorage.getItem("eleves") || "[]");
   if (!data.length) return;
 
-  const header = ["nom","prenom","classe","sexe","distance","vitesse","vma"];
+  const header = allColumnKeys(data);
   const lignes = data.map(e => header.map(k => (e[k] ?? "")).join("\t")).join("%0A");
   const entete = header.join("\t");
 
-  const body = `Bonjour,%0A%0AVoici la liste des participants scannés :%0A%0A${encodeURIComponent(entete)}%0A${encodeURIComponent(lignes)}%0A%0ACordialement.`;
+  const body = `Bonjour,%0A%0AVoici la liste des participants scannés depuis ScanProf :%0A%0A${encodeURIComponent(entete)}%0A${encodeURIComponent(lignes)}%0A%0ACordialement.`;
   const mailto = `mailto:?subject=${encodeURIComponent("Participants ScanProf")}&body=${body}`;
   window.location.href = mailto;
 }
