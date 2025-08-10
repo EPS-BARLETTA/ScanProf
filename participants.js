@@ -2,10 +2,11 @@
 let _elevesBrut = [];
 let _vueCourante = [];
 
+// --- Helpers ---
 // --- Helper: compute ordered column keys across all rows ---
 function allColumnKeys(rows) {
   if (!rows || !rows.length) return [];
-  const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma"];
+  const standard = ["nom","prenom","classe","sexe","distance","vitesse","vma","intermediaires","temps_total"];
   const set = new Set();
   rows.forEach(r => Object.keys(r || {}).forEach(k => set.add(k)));
   // standard d’abord si présents, puis autres clés en ordre alpha
@@ -13,6 +14,17 @@ function allColumnKeys(rows) {
     .filter(k => !standard.includes(k))
     .sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
   return [...standard.filter(k => set.has(k)), ...others];
+}
+
+// Render helper pour mieux afficher certaines cellules
+function formatCellValue(key, val) {
+  if (val == null) return "";
+  const k = (key || "").toLowerCase();
+  // Si c’est "intermediaires" avec des valeurs séparées par des virgules -> une ligne par valeur
+  if (typeof val === "string" && val.includes(",") && (k.includes("interm") || k.includes("split"))) {
+    return val.split(",").map(s => s.trim()).join("<br>");
+  }
+  return String(val);
 }
 
 // -------- Initialisation --------
@@ -52,7 +64,7 @@ function updateTable(data) {
 
   // Body
   tbody.innerHTML = data.map((row, i) => {
-    const tds = cols.map(k => row[k] ?? "").join("</td><td>");
+    const tds = cols.map(k => formatCellValue(k, row[k])).join("</td><td>");
     return `<tr class="${i % 2 === 0 ? 'pair' : 'impair'}"><td>${tds}</td></tr>`;
   }).join("");
 }
@@ -150,20 +162,32 @@ function importerCSV(event) {
   reader.readAsText(file);
 }
 
-// -------- Impression --------
+// -------- Impression (fiable iPad) --------
 function imprimerTableau() {
   const table = document.getElementById("participants-table");
   if (!table) return;
 
-  const win = window.open("", "_blank");
-  win.document.write(`
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow || iframe.contentDocument;
+  const wdoc = doc.document || doc;
+  wdoc.open();
+  wdoc.write(`
     <html>
       <head>
         <title>Participants</title>
+        <meta charset="utf-8">
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
           th { background: #f2f2f2; }
           tr:nth-child(even) { background: #f9f9f9; }
         </style>
@@ -173,10 +197,13 @@ function imprimerTableau() {
       </body>
     </html>
   `);
-  win.document.close();
-  win.focus();
-  win.print();
-  win.close();
+  wdoc.close();
+
+  setTimeout(() => {
+    (iframe.contentWindow || iframe).focus();
+    (iframe.contentWindow || iframe).print();
+    setTimeout(() => document.body.removeChild(iframe), 1000);
+  }, 100);
 }
 
 // -------- Envoi par mail --------
