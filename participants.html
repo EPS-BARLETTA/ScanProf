@@ -24,15 +24,12 @@
     tbody tr.pair { background:#ffffff; }
     tbody tr.impair { background:#eaf6ff; }
     footer { background:#1e90ff; color:#fff; text-align:center; padding:10px 12px; }
-    input[type="text"] { padding: 8px 10px; border:1px solid #ccc; border-radius: 6px; min-width: 220px; }
+    input[type="text"], input[type="number"] { padding: 8px 10px; border:1px solid #ccc; border-radius: 6px; min-width: 220px; }
 
     /* ==== Modale ajout manuel ==== */
-    .sp-hidden{display:none;} /* définie mais neutralisée par .sp-modal (plus bas) */
     .sp-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
-    /* La règle PRÉVALENTE pour masquer la modale quand .sp-hidden est présent */
     .sp-modal.sp-hidden{display:none !important;}
-
-    .sp-card{background:#fff;width:min(92vw,640px);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);padding:16px}
+    .sp-card{background:#fff;width:min(92vw,720px);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);padding:16px}
     .sp-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .sp-card-header h3{margin:0;font-size:1.1rem}
     .sp-close{font-size:1.4rem;line-height:1;border:none;background:transparent;cursor:pointer;padding:4px 8px}
@@ -40,8 +37,6 @@
     .sp-form label{display:grid;gap:6px;font-size:.95rem}
     .sp-form input,.sp-form select{padding:.55rem .6rem;border:1px solid #e5e7eb;border-radius:8px}
     .sp-req{color:#c00}
-    .sp-custom{margin-top:12px;border:1px dashed #e5e7eb;border-radius:10px;padding:10px}
-    .sp-custom-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:.25rem 0}
     .sp-actions{display:flex;gap:8px;margin-top:10px}
     .sp-btn{cursor:pointer}
     .sp-btn-primary{background:#1e90ff;border:1px solid #1e90ff;color:#fff;border-radius:10px;padding:.6rem .9rem}
@@ -49,7 +44,15 @@
     .sp-btn-outline{border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:.45rem .7rem}
     .sp-btn-ghost{background:transparent;border:1px solid transparent;padding:.55rem .9rem}
     .sp-hint{font-size:.85rem;color:#666}
-    /* ==== /Modale ==== */
+
+    /* Sections détectées / personnalisées */
+    fieldset.sp-section{margin-top:12px;border:1px dashed #e5e7eb;border-radius:10px;padding:10px}
+    fieldset.sp-section legend{padding:0 6px;color:#444;font-weight:600}
+    .sp-dyn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .sp-custom-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:.25rem 0}
+
+    /* Champs conditionnels (RunStats) cachés par défaut; révélés au besoin */
+    .sp-field{display:none;}
   </style>
   <script src="participants.js" defer></script>
 </head>
@@ -108,7 +111,7 @@
     </footer>
   </div>
 
-  <!-- Modale d’ajout manuel (fermée par défaut grâce à .sp-hidden) -->
+  <!-- Modale d’ajout manuel (fermée par défaut) -->
   <div id="spManualModal" class="sp-modal sp-hidden" aria-hidden="true">
     <div class="sp-card" role="dialog" aria-modal="true" aria-labelledby="spManualTitle">
       <div class="sp-card-header">
@@ -117,6 +120,7 @@
       </div>
 
       <form id="spForm" class="sp-form">
+        <!-- Bloc de base (toujours affiché) -->
         <div class="row">
           <label>Nom <span class="sp-req">*</span>
             <input name="nom" autocomplete="family-name" required>
@@ -138,16 +142,18 @@
             </select>
           </label>
         </div>
+
+        <!-- Champs conditionnels RunStats (masqués si absents dans les colonnes) -->
         <div class="row">
-          <label>Distance (m)
+          <label class="sp-field" data-key="distance">Distance (m)
             <input name="distance" inputmode="decimal" placeholder="ex. 2400">
           </label>
-          <label>Vitesse (km/h)
+          <label class="sp-field" data-key="vitesse">Vitesse (km/h)
             <input name="vitesse" inputmode="decimal" placeholder="ex. 12.5">
           </label>
         </div>
         <div class="row">
-          <label>VMA
+          <label class="sp-field" data-key="vma">VMA
             <input name="vma" inputmode="decimal" placeholder="ex. 13.2">
           </label>
           <label>Conflit doublon
@@ -158,8 +164,15 @@
           </label>
         </div>
 
-        <fieldset class="sp-custom">
-          <legend>Champs personnalisés (facultatif)</legend>
+        <!-- Champs détectés automatiquement (ClimbTrack, autres apps…) -->
+        <fieldset id="spDetectedSection" class="sp-section" style="display:none">
+          <legend>Champs détectés</legend>
+          <div id="spDetectedZone" class="sp-dyn-grid"></div>
+        </fieldset>
+
+        <!-- Champs personnalisés libres -->
+        <fieldset class="sp-section">
+          <legend>Champs personnalisés</legend>
           <div id="spCustomZone"></div>
           <button type="button" id="spAddCustom" class="sp-btn sp-btn-outline">+ Ajouter un champ</button>
         </fieldset>
@@ -179,51 +192,40 @@
     const $  = (s, r=document) => r.querySelector(s);
     const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-    // Ouverture/fermeture modale
-    const openBtn = $('#spAddBtn');
-    const modal   = $('#spManualModal');
-    const form    = $('#spForm');
-    const custom  = $('#spCustomZone');
+    const openBtn   = $('#spAddBtn');
+    const modal     = $('#spManualModal');
+    const form      = $('#spForm');
+    const custom    = $('#spCustomZone');
+    const detected  = $('#spDetectedZone');
+    const detSection= $('#spDetectedSection');
 
-    function openModal(){
-      modal.classList.remove('sp-hidden');
-      modal.setAttribute('aria-hidden','false');
-      document.addEventListener('keydown', escClose);
-      $('input[name="nom"]')?.focus();
-    }
-    function closeModal(){
-      modal.classList.add('sp-hidden');
-      modal.setAttribute('aria-hidden','true');
-      document.removeEventListener('keydown', escClose);
-      form.reset(); custom.innerHTML = '';
-    }
-    function escClose(e){ if(e.key === 'Escape') closeModal(); }
+    // --- Utils ---
+    const baseKeys   = new Set(['nom','prenom','classe','sexe','distance','vitesse','vma']);
+    const reserved   = new Set(['doublon']); // noms réservés du formulaire
+    const labelMap   = { // labels nice pour quelques clés fréquentes
+      cotation: 'Cotation',
+      bloc: 'Bloc',
+      blocs: 'Blocs',
+      voies: 'Voies',
+      nbvoies: 'Nombre de voies',
+      points: 'Points',
+      performance: 'Performance',
+      temps: 'Temps (s)',
+      temps_sec: 'Temps (s)',
+      vitesse_ms: 'Vitesse (m/s)',
+      vitesse_kmh: 'Vitesse (km/h)'
+    };
+    const numberish  = new Set(['distance','vitesse','vma','points','temps','temps_sec','vitesse_ms','vitesse_kmh','bloc','blocs','voies','nbvoies']);
 
-    openBtn?.addEventListener('click', openModal);
-    $('#spClose')?.addEventListener('click', closeModal);
-    $('#spCancel')?.addEventListener('click', closeModal);
-    modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-
-    // Champs perso
-    $('#spAddCustom')?.addEventListener('click', () => {
-      const row = document.createElement('div');
-      row.className = 'sp-custom-row';
-      row.innerHTML = `
-        <input placeholder="Clé (ex. dossard)" class="sp-k">
-        <input placeholder="Valeur" class="sp-v">
-        <button type="button" class="sp-btn sp-btn-outline sp-rm">✕</button>
-      `;
-      row.querySelector('.sp-rm').addEventListener('click', ()=> row.remove());
-      custom.appendChild(row);
-    });
-
-    // Utilitaires
     function parseNumber(val){
       if(val == null) return undefined;
       const n = String(val).replace(',', '.').trim();
       if(n === '') return undefined;
       const f = parseFloat(n);
       return isNaN(f) ? undefined : f;
+    }
+    function normKey(k){
+      return String(k||'').trim().toLowerCase();
     }
     function norm(s){
       return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
@@ -242,6 +244,104 @@
       return [eleve.nom, eleve.prenom, eleve.classe].map(norm).join('|');
     }
 
+    function detectColumns(){
+      const cols = new Set();
+
+      // 1) colonnes du tableau si dispo
+      $$('#table-head th').forEach(th => {
+        const k = normKey(th.textContent);
+        if(k) cols.add(k);
+      });
+
+      // 2) union des clés dans localStorage.eleves
+      const data = loadEleves();
+      data.forEach(obj => {
+        Object.keys(obj||{}).forEach(k => {
+          const nk = normKey(k);
+          if(nk && !reserved.has(nk)) cols.add(nk);
+        });
+      });
+
+      return cols;
+    }
+
+    function toggleConditionalFields(cols){
+      // Afficher Distance/Vitesse/VMA seulement si présents dans les colonnes/données
+      ['distance','vitesse','vma'].forEach(k=>{
+        const el = document.querySelector('.sp-field[data-key="'+k+'"]');
+        if(el){
+          el.style.display = cols.has(k) ? 'block' : 'none';
+        }
+      });
+    }
+
+    function buildDetectedFields(cols){
+      // Supprimer anciens
+      detected.innerHTML = '';
+
+      // Clés candidates = colonnes/données - baseKeys - 4 de base
+      const candidates = Array.from(cols).filter(k =>
+        !baseKeys.has(k) && !['nom','prenom','classe','sexe'].includes(k)
+      );
+
+      if(candidates.length === 0){
+        detSection.style.display = 'none';
+        return;
+      }
+
+      // Création inputs auto
+      candidates.forEach(k=>{
+        const label = labelMap[k] || k.charAt(0).toUpperCase()+k.slice(1);
+        const isNum = numberish.has(k);
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `${label}
+          <input name="${k}" ${isNum ? 'inputmode="decimal"' : ''} placeholder="">
+        `;
+        detected.appendChild(wrap);
+      });
+
+      detSection.style.display = 'block';
+    }
+
+    function openModal(){
+      const cols = detectColumns();
+      toggleConditionalFields(cols);
+      buildDetectedFields(cols);
+
+      modal.classList.remove('sp-hidden');
+      modal.setAttribute('aria-hidden','false');
+      document.addEventListener('keydown', escClose);
+      $('input[name="nom"]')?.focus();
+    }
+    function closeModal(){
+      modal.classList.add('sp-hidden');
+      modal.setAttribute('aria-hidden','true');
+      document.removeEventListener('keydown', escClose);
+      form.reset();
+      custom.innerHTML = '';
+      detected.innerHTML = '';
+      detSection.style.display = 'none';
+    }
+    function escClose(e){ if(e.key === 'Escape') closeModal(); }
+
+    openBtn?.addEventListener('click', openModal);
+    $('#spClose')?.addEventListener('click', closeModal);
+    $('#spCancel')?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+
+    // Champs perso (libres)
+    $('#spAddCustom')?.addEventListener('click', () => {
+      const row = document.createElement('div');
+      row.className = 'sp-custom-row';
+      row.innerHTML = `
+        <input placeholder="Clé (ex. dossard)" class="sp-k">
+        <input placeholder="Valeur" class="sp-v">
+        <button type="button" class="sp-btn sp-btn-outline sp-rm">✕</button>
+      `;
+      row.querySelector('.sp-rm').addEventListener('click', ()=> row.remove());
+      custom.appendChild(row);
+    });
+
     // Soumission
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -256,41 +356,65 @@
 
       const classe = (fd.get('classe')||'').toString().trim();
       const sexe = (fd.get('sexe')||'').toString().trim();
-      const distance = parseNumber(fd.get('distance'));
-      const vitesse  = parseNumber(fd.get('vitesse'));
-      const vma      = parseNumber(fd.get('vma'));
-      const doublon  = (fd.get('doublon')||'update').toString();
 
-      // Objet élève (clés attendues par participants.js / tableau)
+      // Base object
       const eleve = { nom, prenom };
       if(classe) eleve.classe = classe;
       if(sexe) eleve.sexe = sexe;
+
+      // Champs conditionnels RunStats (ne s'enregistrent que si saisis)
+      const distance = parseNumber(fd.get('distance'));
+      const vitesse  = parseNumber(fd.get('vitesse'));
+      const vma      = parseNumber(fd.get('vma'));
       if(distance !== undefined) eleve.distance = distance;
       if(vitesse  !== undefined) eleve.vitesse  = vitesse;
       if(vma      !== undefined) eleve.vma      = vma;
 
-      // Champs personnalisés
+      // Champs détectés auto (ClimbTrack, autres…)
+      // On parcourt tous les inputs du bloc détecté
+      $$('#spDetectedZone input').forEach(inp=>{
+        const key = normKey(inp.name);
+        if(!key || reserved.has(key)) return;
+        const raw = inp.value;
+        if(raw == null || String(raw).trim() === '') return;
+
+        const maybeNum = numberish.has(key);
+        const val = maybeNum ? parseNumber(raw) : String(raw).trim();
+        if(val !== undefined && val !== ''){
+          eleve[key] = val;
+        }
+      });
+
+      // Champs personnalisés libres
       $$('.sp-custom-row', custom).forEach(row => {
         const k = row.querySelector('.sp-k')?.value?.trim();
         const v = row.querySelector('.sp-v')?.value?.trim();
-        if(k && v !== undefined){ eleve[k] = v; }
+        if(k && v !== undefined && v !== ''){ eleve[k] = v; }
       });
 
-      // (Meta retirées pour éviter une colonne "source")
+      // Alias de compat si certains scripts lisent les clés en MAJ
+      if (eleve.classe && !eleve.Classe) eleve.Classe = eleve.classe;
+      if (eleve.sexe && !eleve.Sexe) eleve.Sexe = eleve.sexe;
+      if (eleve.vma !== undefined && eleve.VMA === undefined) eleve.VMA = eleve.vma;
+      if (eleve.distance !== undefined && eleve.Distance === undefined) eleve.Distance = eleve.distance;
+      if (eleve.vitesse !== undefined && eleve.Vitesse === undefined) eleve.Vitesse = eleve.vitesse;
 
+      const doublon  = (fd.get('doublon')||'update').toString();
+
+      // Save
       const list = loadEleves();
       const k = keyFor(eleve);
       const idx = list.findIndex(x => keyFor(x) === k);
 
       if(idx >= 0 && doublon === 'update'){
-        list[idx] = { ...list[idx], ...eleve };   // mise à jour
+        list[idx] = { ...list[idx], ...eleve };
       } else {
-        list.push(eleve);                          // ajout
+        list.push(eleve);
       }
 
       saveEleves(list);
       closeModal();
-      location.reload(); // laisse participants.js rerendre
+      location.reload(); // rerender par participants.js
     });
   })();
   </script>
