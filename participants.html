@@ -15,7 +15,6 @@
     .green { background:#28a745; color:#fff; }
     .yellow { background:#ffcc00; color:#222; }
     .purple { background:#8e44ad; color:#fff; }
-    /* bouton manuel ton doux */
     .orange { background:#ffe8cc; color:#222; }
 
     .table-wrapper { background:#fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); padding: 12px; overflow-x: auto; }
@@ -27,9 +26,12 @@
     footer { background:#1e90ff; color:#fff; text-align:center; padding:10px 12px; }
     input[type="text"] { padding: 8px 10px; border:1px solid #ccc; border-radius: 6px; min-width: 220px; }
 
-    /* ==== Modale ajout manuel (scopée) ==== */
-    .sp-hidden{display:none}
+    /* ==== Modale ajout manuel ==== */
+    .sp-hidden{display:none;} /* définie mais neutralisée par .sp-modal (plus bas) */
     .sp-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
+    /* La règle PRÉVALENTE pour masquer la modale quand .sp-hidden est présent */
+    .sp-modal.sp-hidden{display:none !important;}
+
     .sp-card{background:#fff;width:min(92vw,640px);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);padding:16px}
     .sp-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .sp-card-header h3{margin:0;font-size:1.1rem}
@@ -94,9 +96,7 @@
 
       <!-- Navigation -->
       <div class="actions" style="margin-top:12px;">
-        <!-- NOUVEAU bouton manuel, placé à côté de ZENOS -->
         <button id="spAddBtn" type="button" class="button orange">➕ Ajouter un participant</button>
-
         <a href="groupe-zenos.html" class="button yellow">🧬 Groupes ZENOS Tour</a>
         <a href="index.html" class="button green">🏠 Accueil</a>
         <a href="aide.html" class="button purple">❓ Aide</a>
@@ -108,7 +108,7 @@
     </footer>
   </div>
 
-  <!-- Modale d’ajout manuel -->
+  <!-- Modale d’ajout manuel (fermée par défaut grâce à .sp-hidden) -->
   <div id="spManualModal" class="sp-modal sp-hidden" aria-hidden="true">
     <div class="sp-card" role="dialog" aria-modal="true" aria-labelledby="spManualTitle">
       <div class="sp-card-header">
@@ -168,7 +168,7 @@
           <button type="submit" class="sp-btn sp-btn-primary">Enregistrer</button>
           <button type="button" id="spCancel" class="sp-btn sp-btn-ghost">Annuler</button>
         </div>
-        <p class="sp-hint">Sauvegarde dans <code>localStorage.eleves</code> (clé standard). Le tableau se met à jour automatiquement.</p>
+        <p class="sp-hint">Sauvegarde dans <code>localStorage.eleves</code>. Le tableau se met à jour automatiquement.</p>
       </form>
     </div>
   </div>
@@ -226,9 +226,7 @@
       return isNaN(f) ? undefined : f;
     }
     function norm(s){
-      return String(s||'')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // retire accents
-        .trim().toUpperCase();
+      return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
     }
     function loadEleves(){
       try {
@@ -278,9 +276,7 @@
         if(k && v !== undefined){ eleve[k] = v; }
       });
 
-      // Métadonnées
-      eleve.source = eleve.source || 'manuel';
-      eleve.addedAt = new Date().toISOString();
+      // (Meta retirées pour éviter une colonne "source")
 
       const list = loadEleves();
       const k = keyFor(eleve);
