@@ -145,6 +145,10 @@ function updateOrdreButtonText(btn) {
   btn.textContent = _ordreAsc ? "↑ Croissant" : "↓ Décroissant";
 }
 
+// ------------ Identifiant unique d'une ligne ------------
+const uniqKey = (e) =>
+  `${(e.nom||"").toLowerCase()}|${(e.prenom||"").toLowerCase()}|${(e.classe||"").toLowerCase()}`;
+
 // ------------ Initialisation ------------
 function afficherParticipants() {
   _elevesBrut = JSON.parse(localStorage.getItem("eleves") || "[]");
@@ -179,9 +183,11 @@ function updateTable(data) {
   if (cols.some(k => /^T\d+$/i.test(k))) cols = cols.filter(k => !isSplitKey(k));
   thead.innerHTML = `<tr>${cols.map(c => `<th>${humanLabel(c)}</th>`).join("")}</tr>`;
 
+  // Ajoute data-key + title pour l'appui long (sans changer l'apparence)
   tbody.innerHTML = data.map((row, i) => {
     const tds = cols.map(k => formatCellValue(k, row[k])).join("</td><td>");
-    return `<tr class="${i % 2 === 0 ? 'pair' : 'impair'}"><td>${tds}</td></tr>`;
+    const key = uniqKey(row);
+    return `<tr data-key="${key}" title="Astuce : appui long pour supprimer la ligne" class="${i % 2 === 0 ? 'pair' : 'impair'}"><td>${tds}</td></tr>`;
   }).join("");
 }
 
@@ -354,5 +360,71 @@ function resetData() {
     updateTable([]);
   }
 }
+
+// --- Suppression par appui long sur une ligne (sans modifier l'UI) ---
+(function enableLongPressDelete() {
+  const PRESS_MS = 800;  // durée d'appui pour déclencher
+  const MOVE_TOL = 8;    // tolérance de mouvement (px)
+  const BODY_SEL = "#participants-body";
+
+  let pressTimer = null;
+  let startX = 0, startY = 0;
+  let targetRow = null;
+
+  function clearTimer() {
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = null;
+    targetRow = null;
+  }
+
+  function deleteByKey(key) {
+    // 1) localStorage
+    const arr = JSON.parse(localStorage.getItem("eleves") || "[]");
+    const filtered = arr.filter(e => uniqKey(e) !== key);
+    localStorage.setItem("eleves", JSON.stringify(filtered));
+
+    // 2) états en mémoire
+    _elevesBrut = _elevesBrut.filter(e => uniqKey(e) !== key);
+    _vueCourante = _vueCourante.filter(e => uniqKey(e) !== key);
+
+    // 3) rerender
+    updateTable(_vueCourante);
+  }
+
+  function startPress(row, x, y) {
+    clearTimer();
+    targetRow = row;
+    startX = x; startY = y;
+
+    pressTimer = setTimeout(() => {
+      const key = targetRow?.dataset?.key;
+      if (!key) return clearTimer();
+
+      if (confirm("Supprimer cette ligne ?")) {
+        deleteByKey(key);
+      }
+      clearTimer();
+    }, PRESS_MS);
+  }
+
+  // Délégué global : fonctionne après rerender
+  document.addEventListener("pointerdown", (e) => {
+    const row = e.target.closest("tr[data-key]");
+    if (!row) return;
+    if (!row.closest(BODY_SEL)) return; // s'assure qu'on est bien sur le tableau participants
+    startPress(row, e.clientX, e.clientY);
+  }, { passive: true });
+
+  ["pointerup","pointercancel","pointerleave"].forEach(evt =>
+    window.addEventListener(evt, clearTimer, { passive: true })
+  );
+
+  window.addEventListener("pointermove", (e) => {
+    if (!pressTimer) return;
+    const dx = Math.abs(e.clientX - startX);
+    const dy = Math.abs(e.clientY - startY);
+    if (dx > MOVE_TOL || dy > MOVE_TOL) clearTimer(); // annule si on “glisse” (scroll)
+  }, { passive: true });
+})();
 
 window.onload = afficherParticipants;
