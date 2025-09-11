@@ -50,6 +50,15 @@
     fieldset.sp-section legend{padding:0 6px;color:#444;font-weight:600}
     .sp-dyn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .sp-custom-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:.25rem 0}
+
+    /* ---- Post-it mémo (discret) ---- */
+    .memo-suppr{
+      display:inline-block; margin-top:8px; padding:6px 10px;
+      font-size:.95rem; border:1px solid #f3e08a; background:#fff8c5; border-radius:8px;
+    }
+    @media (prefers-color-scheme: dark){
+      .memo-suppr{ background:#2a2a1a; border-color:#5a5400; }
+    }
   </style>
 
   <!-- Ton script existant : on ne le touche pas -->
@@ -94,6 +103,11 @@
           </thead>
           <tbody id="participants-body"></tbody>
         </table>
+      </div>
+
+      <!-- Post-it : info appui long -->
+      <div class="actions" style="margin-top:8px;">
+        <div class="memo-suppr" role="note">📝 Retirer une ligne : appui long sur la ligne</div>
       </div>
 
       <!-- Navigation -->
