@@ -1,10 +1,12 @@
 /**
  * ScanProf — Focus Colonne (affichage uniquement)
- * v1.1.0 — Garde toujours visibles: nom, prenom, classe + la colonne focalisée.
+ * v1.2.0 — Garde toujours visibles: colonnes index 0,1,2 (nom, prénom, classe)
+ *           + garde aussi visibles celles dont les en-têtes matchent nom/prenom/prénom/classe
+ *           + cible le tableau #participants-table
  */
 (function(){
   const FOCUS_CONFIG = {
-    TABLE_SELECTOR: 'table',
+    TABLE_SELECTOR: '#participants-table',
     ACTIONS_SELECTOR: '.actions',
     AUTO_INSERT_POSITION: 'afterbegin',
     LABEL_TEXT: 'Focus colonne :',
@@ -13,16 +15,15 @@
     HIDDEN_CLASS: 'sp-hidden-col',
     CONTROLS_CLASS: 'focus-controls',
     ENABLE_MUTATION_OBSERVER: true,
-    // Noms de colonnes à garder TOUJOURS visibles (normalisés en minuscules sans accent)
-    BASE_ALWAYS_VISIBLE: ['nom','prenom','prénom','classe']
+    BASE_ALWAYS_VISIBLE_NAMES: ['nom','prenom','prénom','classe'],
+    BASE_ALWAYS_VISIBLE_INDEXES: new Set([0,1,2]) // fallback
   };
 
-  // Utils
   const slug = (s) => String(s||'')
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
     .trim().toLowerCase();
 
-  // Inject CSS léger
   function injectCSS(){
     if (document.getElementById('focus-column-style')) return;
     const css = `
@@ -71,27 +72,25 @@
 
   function getHeaderInfo(table){
     const headerRow = getHeaderRow(table);
-    if (!headerRow) return { cells: [], labels: [], baseIdx: new Set() };
+    if (!headerRow) return { cells: [], labels: [], baseIdx: new Set([0,1,2]) };
     const cells  = [...headerRow.children];
     const labels = cells.map(th => slug(th.textContent));
-    const baseIdx = new Set();
+    const baseIdx = new Set([...FOCUS_CONFIG.BASE_ALWAYS_VISIBLE_INDEXES]);
     labels.forEach((lab, i) => {
-      if (FOCUS_CONFIG.BASE_ALWAYS_VISIBLE.includes(lab)) baseIdx.add(i);
+      if (FOCUS_CONFIG.BASE_ALWAYS_VISIBLE_NAMES.includes(lab)) baseIdx.add(i);
     });
     return { cells, labels, baseIdx };
   }
 
   function populateSelect(table, select){
     const prev = select.value;
-    // reset except first
     for (let i = select.options.length - 1; i >= 1; i--) select.remove(i);
 
     const { labels } = getHeaderInfo(table);
     labels.forEach((lab, idx) => {
-      const labelText = (lab || `Colonne ${idx+1}`);
+      const labelText = lab || `Colonne ${idx+1}`;
       const opt = document.createElement('option');
       opt.value = String(idx);
-      // Remettre quelques accents usuels
       const pretty = labelText.replace('prenom','prénom');
       opt.textContent = pretty.charAt(0).toUpperCase() + pretty.slice(1);
       select.appendChild(opt);
@@ -105,19 +104,14 @@
     const headerRow = getHeaderRow(table);
     if (!headerRow) return;
     const { baseIdx } = getHeaderInfo(table);
-
     const selectedIndex = (indexStr === '__all__') ? null : Number(indexStr);
 
     const rows = table.querySelectorAll('thead tr, tbody tr');
     rows.forEach(tr => {
       [...tr.children].forEach((cell, i) => {
         if (selectedIndex === null) {
-          // Mode "Toutes" : tout afficher
           cell.classList.remove(FOCUS_CONFIG.HIDDEN_CLASS);
         } else {
-          // Afficher si :
-          // - colonne sélectionnée
-          // - OU colonne de base (nom/prenom/classe)
           if (i === selectedIndex || baseIdx.has(i)) {
             cell.classList.remove(FOCUS_CONFIG.HIDDEN_CLASS);
           } else {
