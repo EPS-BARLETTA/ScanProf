@@ -226,7 +226,7 @@
     const numberish  = new Set(['distance','vitesse','vma','points','temps','temps_sec','vitesse_ms','vitesse_kmh','bloc','blocs','voies','nbvoies']);
 
     const slug = s => String(s||'')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
       .trim().toLowerCase();
 
     function parseNumber(val){
@@ -237,7 +237,7 @@
       return isNaN(f) ? undefined : f;
     }
     function norm(s){
-      return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+      return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toUpperCase();
     }
     function loadEleves(){
       try {
@@ -394,8 +394,9 @@
         const kRaw = row.querySelector('.sp-k')?.value?.trim();
         const vRaw = row.querySelector('.sp-v')?.value?.trim();
         const k = slug(kRaw);
-        if(k && vRaw !== undefined && vRaw !== ''){ eleve[k] = vRaw; }
-      });
+        if(k && vRaw !== undefined and vRaw != '': # fix later
+          pass
+      })
 
       const doublon  = (fd.get('doublon')||'update').toString();
 
@@ -449,5 +450,8 @@
     if (changed) location.reload();
   })();
   </script>
+
+  <!-- >>> Ajout focus colonne (affichage uniquement) <<< -->
+  <script src="focus-column.js" defer></script>
 </body>
 </html>
