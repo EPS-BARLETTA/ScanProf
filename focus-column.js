@@ -1,31 +1,28 @@
 /**
  * ScanProf — Focus Colonne (affichage uniquement)
- * Version: 1.0.0
- * Auteur: ChatGPT (pack drop-in)
- *
- * Ce module ajoute une option "Focus colonne" pour n'afficher qu'une colonne
- * d'un tableau HTML, sans toucher aux données ni au reste de l'application.
- * Il s'adapte dynamiquement aux colonnes (quel que soit l'outil qui a généré les clés).
- *
- * Installation minimale : ajouter ce script avec `defer` dans participants.html
- *   <script src="focus-column.js" defer></script>
- *
- * Optionnel : Vous pouvez changer le sélecteur de la barre d'actions via FOCUS_CONFIG.ACTIONS_SELECTOR
+ * v1.1.0 — Garde toujours visibles: nom, prenom, classe + la colonne focalisée.
  */
 (function(){
   const FOCUS_CONFIG = {
-    TABLE_SELECTOR: 'table',               // Sélecteur du tableau cible
-    ACTIONS_SELECTOR: '.actions',          // Où insérer les contrôles si présent
-    AUTO_INSERT_POSITION: 'afterbegin',    // Position d'insertion dans la barre d'actions
+    TABLE_SELECTOR: 'table',
+    ACTIONS_SELECTOR: '.actions',
+    AUTO_INSERT_POSITION: 'afterbegin',
     LABEL_TEXT: 'Focus colonne :',
     ALL_TEXT: '— Toutes —',
     RESET_TEXT: 'Afficher tout',
     HIDDEN_CLASS: 'sp-hidden-col',
     CONTROLS_CLASS: 'focus-controls',
-    ENABLE_MUTATION_OBSERVER: true
+    ENABLE_MUTATION_OBSERVER: true,
+    // Noms de colonnes à garder TOUJOURS visibles (normalisés en minuscules sans accent)
+    BASE_ALWAYS_VISIBLE: ['nom','prenom','prénom','classe']
   };
 
-  // Injecte un mini CSS non intrusif
+  // Utils
+  const slug = (s) => String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim().toLowerCase();
+
+  // Inject CSS léger
   function injectCSS(){
     if (document.getElementById('focus-column-style')) return;
     const css = `
@@ -57,7 +54,7 @@
     resetBtn.id = 'resetFocusBtn';
     resetBtn.type = 'button';
     resetBtn.textContent = FOCUS_CONFIG.RESET_TEXT;
-    resetBtn.className = 'button'; // profite du style bouton si présent
+    resetBtn.className = 'button';
 
     wrap.appendChild(label);
     wrap.appendChild(select);
@@ -72,24 +69,34 @@
     return firstBodyRow || null;
   }
 
+  function getHeaderInfo(table){
+    const headerRow = getHeaderRow(table);
+    if (!headerRow) return { cells: [], labels: [], baseIdx: new Set() };
+    const cells  = [...headerRow.children];
+    const labels = cells.map(th => slug(th.textContent));
+    const baseIdx = new Set();
+    labels.forEach((lab, i) => {
+      if (FOCUS_CONFIG.BASE_ALWAYS_VISIBLE.includes(lab)) baseIdx.add(i);
+    });
+    return { cells, labels, baseIdx };
+  }
+
   function populateSelect(table, select){
-    // Préserver valeur courante
     const prev = select.value;
-    // Nettoyer, garder l'option 0 ("Toutes")
+    // reset except first
     for (let i = select.options.length - 1; i >= 1; i--) select.remove(i);
 
-    const headerRow = getHeaderRow(table);
-    if (!headerRow) return;
-
-    [...headerRow.children].forEach((cell, idx) => {
-      const label = (cell.textContent || '').trim() || `Colonne ${idx+1}`;
+    const { labels } = getHeaderInfo(table);
+    labels.forEach((lab, idx) => {
+      const labelText = (lab || `Colonne ${idx+1}`);
       const opt = document.createElement('option');
       opt.value = String(idx);
-      opt.textContent = label;
+      // Remettre quelques accents usuels
+      const pretty = labelText.replace('prenom','prénom');
+      opt.textContent = pretty.charAt(0).toUpperCase() + pretty.slice(1);
       select.appendChild(opt);
     });
 
-    // Restaurer choix si possible
     const possible = ['__all__', ...[...select.options].slice(1).map(o=>o.value)];
     select.value = possible.includes(prev) ? prev : '__all__';
   }
@@ -97,15 +104,25 @@
   function applyFocus(table, indexStr){
     const headerRow = getHeaderRow(table);
     if (!headerRow) return;
-    const index = indexStr === '__all__' ? null : Number(indexStr);
+    const { baseIdx } = getHeaderInfo(table);
+
+    const selectedIndex = (indexStr === '__all__') ? null : Number(indexStr);
 
     const rows = table.querySelectorAll('thead tr, tbody tr');
     rows.forEach(tr => {
       [...tr.children].forEach((cell, i) => {
-        if (index === null || i === index){
+        if (selectedIndex === null) {
+          // Mode "Toutes" : tout afficher
           cell.classList.remove(FOCUS_CONFIG.HIDDEN_CLASS);
         } else {
-          cell.classList.add(FOCUS_CONFIG.HIDDEN_CLASS);
+          // Afficher si :
+          // - colonne sélectionnée
+          // - OU colonne de base (nom/prenom/classe)
+          if (i === selectedIndex || baseIdx.has(i)) {
+            cell.classList.remove(FOCUS_CONFIG.HIDDEN_CLASS);
+          } else {
+            cell.classList.add(FOCUS_CONFIG.HIDDEN_CLASS);
+          }
         }
       });
     });
@@ -115,9 +132,8 @@
     injectCSS();
 
     const table = document.querySelector(FOCUS_CONFIG.TABLE_SELECTOR);
-    if (!table) return; // rien à faire s'il n'y a pas de tableau (ex: page vide)
+    if (!table) return;
 
-    // Trouver barre d'actions si elle existe, sinon insérer avant le tableau
     const actions = document.querySelector(FOCUS_CONFIG.ACTIONS_SELECTOR);
     const controls = createControls();
     if (actions){
@@ -129,11 +145,9 @@
     const select = controls.querySelector('#focusColumnSelect');
     const resetBtn = controls.querySelector('#resetFocusBtn');
 
-    // Init
     populateSelect(table, select);
     applyFocus(table, '__all__');
 
-    // Events
     select.addEventListener('change', ()=> applyFocus(table, select.value));
     resetBtn.addEventListener('click', ()=> {
       select.value = '__all__';
@@ -144,7 +158,6 @@
       const observer = new MutationObserver(()=>{
         const current = select.value;
         populateSelect(table, select);
-        // conserver si possible
         select.value = [...select.options].some(o=>o.value===current) ? current : '__all__';
         applyFocus(table, select.value);
       });
