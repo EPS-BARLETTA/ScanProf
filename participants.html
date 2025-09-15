@@ -10,56 +10,25 @@
   <div class="wrap">
     <main class="main">
       <div class="actions">
-        <!-- Vos autres boutons existants peuvent rester ici -->
-        <button id="btnAddParticipant" class="button blue">+ Ajouter un participant</button>
+        <button class="button green" onclick="window.location.href='index.html'">Accueil</button>
+        <button class="button red" id="reset">Réinitialiser</button>
+        <button class="button blue" id="sort">Trier</button>
+        <button class="button" id="exportCSV">Exporter CSV</button>
+        <button class="button" id="importCSV">Réimporter CSV</button>
+        <button class="button" id="print">Imprimer</button>
+        <button class="button" id="mail">Envoyer par mail</button>
+        <button class="button" id="zenos">Groupe ZENOS Tour</button>
+        <button class="button blue" id="addParticipant">+ Ajouter un participant</button>
       </div>
 
-      <!-- Votre tableau existant doit déjà être présent dans la page -->
-      <!-- Exemple (placeholder) :
       <table id="participantsTable">
-        <thead><tr><th>Nom</th><th>Prénom</th><th>Classe</th><th>Sexe</th><th>VMA</th></tr></thead>
-        <tbody></tbody>
+        <thead>
+          <tr id="tableHead"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
       </table>
-      -->
-
-      <!-- Dialog d’ajout -->
-      <dialog id="addParticipantDialog" style="max-width:560px;border:none;border-radius:14px;padding:0;">
-        <form id="addParticipantForm" method="dialog" style="padding:16px;">
-          <h3 style="margin:0 0 12px;">Ajouter un participant</h3>
-
-          <!-- Champs détectés depuis les colonnes -->
-          <div id="dynamicFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-
-          <!-- Zone champs optionnels -->
-          <div style="margin-top:12px;border-top:1px solid #e5e7eb;padding-top:12px;">
-            <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-              <div style="flex:1;min-width:160px">
-                <label style="display:grid;gap:4px">
-                  <span style="font-size:12px;color:#475569">Nom du champ (optionnel)</span>
-                  <input id="optKey" type="text" placeholder="ex: Dossard" />
-                </label>
-              </div>
-              <div style="flex:1;min-width:160px">
-                <label style="display:grid;gap:4px">
-                  <span style="font-size:12px;color:#475569">Valeur</span>
-                  <input id="optVal" type="text" placeholder="ex: 27" />
-                </label>
-              </div>
-              <button type="button" id="btnAddOptional" class="button">+ Ajouter ce champ</button>
-            </div>
-            <div id="optionalList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
-          </div>
-
-          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-            <button type="button" id="cancelAdd" class="button">Annuler</button>
-            <button type="submit" class="button green">Enregistrer</button>
-          </div>
-        </form>
-      </dialog>
     </main>
   </div>
-
-  <!-- IMPORTANT : assurez-vous que participants.js est chargé en bas -->
-  <script src="participants.js" defer></script>
+  <script src="participants.js"></script>
 </body>
 </html>
