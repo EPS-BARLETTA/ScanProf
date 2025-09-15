@@ -1,12 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const tableBody = document.getElementById("tableBody");
-  const addBtn = document.getElementById("addParticipant");
 
   function loadEleves() {
-    return JSON.parse(localStorage.getItem("eleves") || "[]");
-  }
-  function saveEleves(list) {
-    localStorage.setItem("eleves", JSON.stringify(list));
+    try { return JSON.parse(localStorage.getItem("eleves") || "[]"); }
+    catch { return []; }
   }
 
   function renderTable() {
@@ -23,20 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  addBtn.addEventListener("click", () => {
-    const nom = prompt("Nom :");
-    const prenom = prompt("Prénom :");
-    const classe = prompt("Classe :");
-    const sexe = prompt("Sexe :");
-    const vma = prompt("VMA :");
-
-    if (nom && prenom) {
-      const eleves = loadEleves();
-      eleves.push({ Nom: nom, Prénom: prenom, Classe: classe, Sexe: sexe, VMA: vma });
-      saveEleves(eleves);
-      renderTable();
-    }
-  });
-
+  // Pas d’eventListener sur #addParticipant → bouton présent mais ne fait rien (état initial)
   renderTable();
 });

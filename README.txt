@@ -1,11 +1,15 @@
-ScanProf — Version de départ du bouton “+ Ajouter un participant”
-=================================================================
+ScanProf — Restauration à l'état initial (bouton inactif)
+========================================================
 
-Cette archive contient :
-
+Ce ZIP remet exactement les fichiers d'origine suivants :
 - participants.html
 - participants.js
 
-Le bouton “+ Ajouter un participant” ouvre des prompt() successifs pour saisir Nom, Prénom, Classe, Sexe, VMA.
+Effet :
+- L'application fonctionne comme au départ (scan, tri, exports, ZENOS, etc.).
+- Le bouton “+ Ajouter un participant” est visible mais n'a aucune action (inactif).
 
-Les données sont ajoutées dans localStorage.eleves et réaffichées dans le tableau.
+Installation :
+1) Sauvegardez vos fichiers actuels.
+2) Remplacez `participants.html` et `participants.js` par ceux de ce ZIP.
+3) Poussez sur GitHub (Pages).
